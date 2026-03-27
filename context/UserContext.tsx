@@ -188,7 +188,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     // Handle new user creation (optional, for admin contexts)
     const handleUserCreated = (newUser: User) => {
-      console.log("New user created:", newUser);
     };
 
     // Bind events

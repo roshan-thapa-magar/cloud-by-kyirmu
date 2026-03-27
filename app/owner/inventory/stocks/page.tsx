@@ -111,7 +111,6 @@ export default function ItemsPage() {
 
     // Handle item creation
     const handleItemCreated = (newItem: Item) => {
-      console.log('New item received:', newItem);
       
       // Check if this item was already added optimistically
       setItems(prev => {
@@ -142,7 +141,6 @@ export default function ItemsPage() {
 
     // Handle item update
     const handleItemUpdated = (updatedItem: Item) => {
-      console.log('Item updated:', updatedItem);
       setItems(prev =>
         prev.map(item =>
           item._id === updatedItem._id ? updatedItem : item
@@ -153,7 +151,6 @@ export default function ItemsPage() {
 
     // Handle item image update
     const handleItemImageUpdated = (updatedItem: Item) => {
-      console.log('Item image updated:', updatedItem);
       setItems(prev =>
         prev.map(item =>
           item._id === updatedItem._id ? updatedItem : item
@@ -163,7 +160,6 @@ export default function ItemsPage() {
 
     // Handle item deletion
     const handleItemDeleted = (data: { _id: string }) => {
-      console.log('Item deleted:', data._id);
       const deletedItem = items.find(item => item._id === data._id);
       setItems(prev => prev.filter(item => item._id !== data._id));
       setTotalCount(prev => prev - 1);
@@ -175,7 +171,6 @@ export default function ItemsPage() {
 
     // Handle bulk item updates (if needed)
     const handleItemsBulkUpdate = (updatedItems: Item[]) => {
-      console.log('Bulk items update:', updatedItems);
       setItems(updatedItems);
       toast.info('Items have been updated');
     };

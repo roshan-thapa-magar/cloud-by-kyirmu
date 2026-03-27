@@ -100,7 +100,6 @@ export default function CategoriesPage() {
 
     // Handle category creation
     const handleCategoryCreated = (newCategory: Category) => {
-      console.log('New category received:', newCategory);
       
       // Check if this category was already added optimistically
       setCategories(prev => {
@@ -131,7 +130,6 @@ export default function CategoriesPage() {
 
     // Handle category update
     const handleCategoryUpdated = (updatedCategory: Category) => {
-      console.log('Category updated:', updatedCategory);
       setCategories(prev =>
         prev.map(c => (c._id === updatedCategory._id ? updatedCategory : c))
       );
@@ -140,7 +138,6 @@ export default function CategoriesPage() {
 
     // Handle category image update
     const handleCategoryImageUpdated = (updatedCategory: Category) => {
-      console.log('Category image updated:', updatedCategory);
       setCategories(prev =>
         prev.map(c => (c._id === updatedCategory._id ? updatedCategory : c))
       );
@@ -148,7 +145,6 @@ export default function CategoriesPage() {
 
     // Handle category deletion
     const handleCategoryDeleted = (data: { _id: string }) => {
-      console.log('Category deleted:', data._id);
       const deletedCategory = categories.find(c => c._id === data._id);
       setCategories(prev => prev.filter(c => c._id !== data._id));
       setTotalCount(prev => prev - 1);
@@ -160,7 +156,6 @@ export default function CategoriesPage() {
 
     // Handle bulk category updates (if needed)
     const handleCategoriesBulkUpdate = (updatedCategories: Category[]) => {
-      console.log('Bulk category update:', updatedCategories);
       setCategories(updatedCategories);
       toast.info('Categories have been updated');
     };

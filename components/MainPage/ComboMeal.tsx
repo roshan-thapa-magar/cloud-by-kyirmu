@@ -66,7 +66,6 @@ export default function ComboMeal() {
 
     // Handle item creation
     const handleItemCreated = (newItem: any) => {
-      console.log('New combo item created:', newItem);
       // Only refresh if the new item is a combo
       if (newItem.itemType === "combo") {
         refreshItems();
@@ -76,7 +75,6 @@ export default function ComboMeal() {
 
     // Handle item image update
     const handleItemImageUpdated = (updatedItem: any) => {
-      console.log('Item image updated:', updatedItem);
       setItems(prev =>
         prev.map(item =>
           item._id === updatedItem._id ? updatedItem : item
@@ -86,7 +84,6 @@ export default function ComboMeal() {
 
     // Handle item deletion
     const handleItemDeleted = (data: { _id: string }) => {
-      console.log('Item deleted:', data._id);
       // Check if the deleted item is a combo and exists in current items
       const deletedItem = items.find(item => item._id === data._id);
       if (deletedItem && deletedItem.itemType === "combo") {
@@ -100,7 +97,6 @@ export default function ComboMeal() {
 
     // Handle item update
     const handleItemUpdated = (updatedItem: any) => {
-      console.log('Item updated:', updatedItem);
       // Check if the updated item is a combo
       if (updatedItem.itemType === "combo") {
         // Update in place if it exists
@@ -125,7 +121,6 @@ export default function ComboMeal() {
 
     // Handle bulk items update
     const handleItemsBulkUpdate = () => {
-      console.log('Bulk items update');
       refreshItems();
     };
 

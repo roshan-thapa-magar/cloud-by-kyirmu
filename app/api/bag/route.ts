@@ -155,32 +155,21 @@ export async function POST(request: NextRequest) {
     );
     const totalAmount = price * (qty || 1) + totalToppingsPrice;
 
-    // --- Debug logging to see what's being compared ---
-    console.log("Processing new item:", {
-      userId,
-      itemId,
-      itemName,
-      toppings: processedToppings
-    });
+
 
     // --- Check if identical item already exists in bag ---
     // Get all bag items for this user
     const existingBagItems = await BagItem.find({ userId });
     
-    console.log(`Found ${existingBagItems.length} existing bag items for user ${userId}`);
 
     // Look for an item with identical itemId and toppings configuration
     let existingItem = null;
     for (const bagItem of existingBagItems) {
       // First check if it's the same base item
       if (bagItem.itemId === itemId && bagItem.itemName === itemName) {
-        console.log("Comparing with existing item:", {
-          id: bagItem._id,
-          toppings: bagItem.toppings
-        });
+       
         
         const isEqual = areToppingsEqual(bagItem.toppings, processedToppings);
-        console.log("Toppings equal:", isEqual);
         
         if (isEqual) {
           existingItem = bagItem;
@@ -205,7 +194,6 @@ export async function POST(request: NextRequest) {
         { new: true }
       );
 
-      console.log(`Updated existing item: ${existingItem._id}, new quantity: ${newQty}`);
 
       return NextResponse.json(
         { 
@@ -231,7 +219,6 @@ export async function POST(request: NextRequest) {
       totalAmount,
     });
 
-    console.log(`Created new bag item: ${newBag._id}`);
 
     return NextResponse.json(
       { success: true, message: "Bag created successfully", data: newBag, updated: false },

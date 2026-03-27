@@ -38,14 +38,12 @@ export default function Categories() {
 
     // Handle new category created
     const handleCategoryCreated = (newCategory: Category) => {
-      console.log('New category created:', newCategory)
       setCategories(prev => [newCategory, ...prev])
       toast.success(`New category "${newCategory.categoryName}" added`)
     }
 
     // Handle category image updated
     const handleCategoryImageUpdated = (updatedCategory: Category) => {
-      console.log('Category image updated:', updatedCategory)
       setCategories(prev =>
         prev.map(c => (c._id === updatedCategory._id ? updatedCategory : c))
       )
@@ -54,7 +52,6 @@ export default function Categories() {
 
     // Handle category updated
     const handleCategoryUpdated = (updatedCategory: Category) => {
-      console.log('Category updated:', updatedCategory)
       setCategories(prev =>
         prev.map(c => (c._id === updatedCategory._id ? updatedCategory : c))
       )
@@ -63,7 +60,6 @@ export default function Categories() {
 
     // Handle category deleted
     const handleCategoryDeleted = (data: { _id: string }) => {
-      console.log('Category deleted:', data._id)
       setCategories(prev => prev.filter(c => c._id !== data._id))
       toast.info('Category deleted')
     }

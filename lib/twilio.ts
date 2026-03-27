@@ -10,7 +10,6 @@ export async function sendWhatsAppOTP(phone: string, otp: string) {
       to: `whatsapp:${phone}`,
       body: `Your password reset code is: ${otp}`,
     });
-    console.log("WhatsApp OTP sent, SID:", message.sid);
   } catch (error) {
     console.error("Twilio error:", error);
     throw error;
@@ -147,7 +146,6 @@ export async function sendWhatsAppOrderDetails(order: any) {
       body: messageBody,
     });
 
-    console.log("Order WhatsApp sent, SID:", message.sid);
     return message.sid;
   } catch (error) {
     console.error("Error sending WhatsApp order:", error);

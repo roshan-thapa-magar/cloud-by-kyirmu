@@ -90,7 +90,6 @@ export default function ActiveOrdersPage() {
 
     // Handle new order
     const handleNewOrder = (newOrder: Order) => {
-      console.log('New order received:', newOrder);
       // Check if order status matches our active statuses
       const activeStatuses = ['pending', 'preparing', 'served'];
       if (activeStatuses.includes(newOrder.status)) {
@@ -104,21 +103,18 @@ export default function ActiveOrdersPage() {
 
     // Handle order update
     const handleOrderUpdate = (updatedOrder: Order) => {
-      console.log('Order updated:', updatedOrder);
       fetchOrders(); // Refresh the list
       toast.info(`Order #${updatedOrder.orderId} has been updated`);
     };
 
     // Handle order deletion
     const handleOrderDelete = (deletedOrder: Order) => {
-      console.log('Order deleted:', deletedOrder);
       fetchOrders(); // Refresh the list
       toast.info(`Order #${deletedOrder.orderId} has been deleted`);
     };
 
     // Handle status update
     const handleStatusUpdate = (updatedOrder: Order) => {
-      console.log('Order status updated:', updatedOrder);
       fetchOrders(); // Refresh the list
       toast.info(`Order #${updatedOrder.orderId} status changed to ${updatedOrder.status}`);
     };

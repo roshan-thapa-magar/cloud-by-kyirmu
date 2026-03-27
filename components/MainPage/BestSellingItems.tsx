@@ -34,7 +34,6 @@ export default function BestSellingItems() {
         limit: 8,
       });
       
-      console.log("Fetched items:", data.items?.length || 0);
       setItems(data.items || []);
     } catch (error) {
       console.error("Failed to fetch best selling items", error);
@@ -66,7 +65,6 @@ export default function BestSellingItems() {
 
     // Handle new item created
     const handleItemCreated = (newItem: Item) => {
-      console.log('New item created:', newItem);
       // Only refresh if the item is a single item (best selling eligible)
       if (newItem.itemType === 'single') {
         fetchComboItems();
@@ -76,7 +74,6 @@ export default function BestSellingItems() {
 
     // Handle item updated
     const handleItemUpdated = (updatedItem: Item) => {
-      console.log('Item updated:', updatedItem);
       setItems(prev =>
         prev.map(item =>
           item._id === updatedItem._id ? updatedItem : item
@@ -86,7 +83,6 @@ export default function BestSellingItems() {
 
     // Handle item image updated
     const handleItemImageUpdated = (updatedItem: Item) => {
-      console.log('Item image updated:', updatedItem);
       setItems(prev =>
         prev.map(item =>
           item._id === updatedItem._id ? updatedItem : item
@@ -103,7 +99,6 @@ export default function BestSellingItems() {
 
     // Handle bulk item update (if needed)
     const handleItemsBulkUpdate = (updatedItems: Item[]) => {
-      console.log('Bulk items update:', updatedItems);
       setItems(updatedItems.filter(item => item.itemType === 'single').slice(0, 8));
       toast.info('Items list updated');
     };

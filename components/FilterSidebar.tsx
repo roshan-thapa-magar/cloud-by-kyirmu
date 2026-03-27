@@ -68,7 +68,6 @@ function CategoryList({
 
     // Handle new category created
     const handleCategoryCreated = (newCategory: Category) => {
-      console.log('New category created:', newCategory);
       setCategories(prev => {
         // Check if category already exists to avoid duplicates
         if (prev.some(c => c._id === newCategory._id)) return prev;
@@ -79,7 +78,6 @@ function CategoryList({
 
     // Handle category updated
     const handleCategoryUpdated = (updatedCategory: Category) => {
-      console.log('Category updated:', updatedCategory);
       setCategories(prev =>
         prev.map(c => (c._id === updatedCategory._id ? updatedCategory : c))
       );
@@ -88,7 +86,6 @@ function CategoryList({
 
     // Handle category image updated
     const handleCategoryImageUpdated = (updatedCategory: Category) => {
-      console.log('Category image updated:', updatedCategory);
       setCategories(prev =>
         prev.map(c => (c._id === updatedCategory._id ? updatedCategory : c))
       );
@@ -96,7 +93,6 @@ function CategoryList({
 
     // Handle category deleted
     const handleCategoryDeleted = (data: { _id: string }) => {
-      console.log('Category deleted:', data._id);
       const deletedCategory = categories.find(c => c._id === data._id);
       setCategories(prev => prev.filter(c => c._id !== data._id));
       

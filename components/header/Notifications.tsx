@@ -48,7 +48,6 @@ const Notifications = ({ userId }: { userId: string }) => {
 
         const res = await fetch(`/api/notification/${userId}?page=${pageToFetch}&limit=${limit}`);
         const data = await res.json();
-        console.log(data)
 
         if (res.ok) {
           const newNotifications: Notification[] = data.orders.map((o: any) => ({
@@ -57,7 +56,6 @@ const Notifications = ({ userId }: { userId: string }) => {
             status: o.status.toLowerCase(),
             createdAt: o.createdAt,
           }));
-          console.log(newNotifications)
 
           // Deduplicate & merge
           const merged = [...notificationsRef.current, ...newNotifications].filter(

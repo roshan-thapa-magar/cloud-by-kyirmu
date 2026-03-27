@@ -37,26 +37,22 @@ export default function BannerSlider() {
 
     // Handle new banner added
     const handleBannerAdded = (newBanner: Banner) => {
-      console.log('New banner added:', newBanner);
       fetchBanners(); // Refresh banners
       toast.success('New banner available!');
     };
 
     // Handle banner update
     const handleBannerUpdated = (updatedBanner: Banner) => {
-      console.log('Banner updated:', updatedBanner);
       fetchBanners(); // Refresh banners
     };
 
     // Handle banner deletion
     const handleBannerDeleted = (data: { id: string }) => {
-      console.log('Banner deleted:', data.id);
       fetchBanners(); // Refresh banners
     };
 
     // Handle banners reordered
     const handleBannersReordered = (reorderedBanners: Banner[]) => {
-      console.log('Banners reordered');
       const sortedData = [...reorderedBanners].sort((a, b) => a.order - b.order);
       setBanners(sortedData);
       // Reset index if needed

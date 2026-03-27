@@ -38,7 +38,6 @@ export default function OrderHistoryPage() {
 
     try {
       const data = await fetchOrdersApi({ userId, page, limit });
-      console.log(data.orders);
       setOrders(data.orders);
       setCurrentPage(data.currentPage);
       setTotalPages(data.totalPages);
