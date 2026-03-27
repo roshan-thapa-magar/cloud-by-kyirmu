@@ -105,13 +105,6 @@ const Notifications = ({ userId }: { userId: string }) => {
     setNotifications(updatedNotifications);
     notificationsRef.current = updatedNotifications;
     setUnreadCount(prev => prev + 1);
-
-    if (Notification.permission === "granted") {
-      new Notification(`Order #${order.orderId} Status Update`, {
-        body: `Your order status has been updated to ${order.status}`,
-        icon: "/logo.png",
-      });
-    }
   }, []);
 
   const handleOrderUpdate = useCallback((updatedOrder: any) => {
@@ -168,7 +161,7 @@ const Notifications = ({ userId }: { userId: string }) => {
 
     adminChannel.bind("order-status-updated", handleOrderUpdate);
 
-    if (Notification.permission === "default") Notification.requestPermission();
+    // Notification permission request removed - no browser popup will appear
 
     return () => {
       userChannel.unbind("order-created", handleNewNotification);
