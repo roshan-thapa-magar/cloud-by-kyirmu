@@ -56,7 +56,7 @@ export default function BestSellingItems() {
         if (states.current === 'connected') {
           // Refresh data when reconnected
           fetchComboItems();
-          toast.success('Reconnected to real-time updates');
+          // toast.success('Reconnected to real-time updates');
         } else if (states.current === 'disconnected') {
           toast.warning('Lost connection to real-time updates');
         }
