@@ -1,16 +1,8 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { getPusherClient } from "@/lib/pusher-client";
 
-// ---- TYPES ----
 interface User {
   _id: string;
   name: string;
@@ -23,22 +15,9 @@ interface User {
   updatedAt?: string;
 }
 
-interface FetchUserResponse {
-  success: boolean;
-  message?: string;
-}
-
-interface UpdateUserResponse {
-  success: boolean;
-  message?: string;
-  user?: User;
-}
-
-interface DeleteUserResponse {
-  success: boolean;
-  message?: string;
-}
-
+interface FetchUserResponse { success: boolean; message?: string; }
+interface UpdateUserResponse { success: boolean; message?: string; user?: User; }
+interface DeleteUserResponse { success: boolean; message?: string; }
 interface UserContextType {
   user: User | null;
   loading: boolean;
@@ -52,196 +31,192 @@ interface UserContextType {
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
-// ---- CONTEXT ----
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// ---- PROVIDER ----
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const isMounted = useRef(true);
 
-  // ---- FETCH USER ----
+  // ---- API METHODS ----
   const fetchUser = useCallback(async (id: string): Promise<FetchUserResponse> => {
     try {
       setLoading(true);
-
       const res = await fetch(`/api/users/${id}`);
       const data = await res.json();
-
-      if (!res.ok) {
-        return { success: false, message: data.message };
+      if (res.ok) {
+        if (isMounted.current) {
+          setUser(data);
+        }
+        return { success: true };
+      } else {
+        return { success: false, message: data.message || "Failed to fetch user" };
       }
-
-      // ✅ FIX: correct response
-      const userData = data.user || data;
-
-      if (isMounted.current) {
-        setUser(userData);
-      }
-
-      return { success: true };
     } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : String(error),
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : String(error) 
       };
-    } finally {
-      if (isMounted.current) setLoading(false);
+    } finally { 
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
-  // ---- UPDATE USER ----
   const updateUser = useCallback(
-    async (
-      id: string,
-      updateData: { name?: string; image?: string; phone?: string; address?: string }
-    ): Promise<UpdateUserResponse> => {
+    async (id: string, updateData: { name?: string; image?: string; phone?: string; address?: string }): Promise<UpdateUserResponse> => {
       try {
         setLoading(true);
-
         const res = await fetch(`/api/users/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updateData),
         });
-
         const data = await res.json();
-
-        if (!res.ok) {
-          return { success: false, message: data.message };
+        if (res.ok) {
+          if (isMounted.current) {
+            setUser(data.user);
+          }
+          return { success: true, message: data.message, user: data.user };
+        } else {
+          return { success: false, message: data.message || "Failed to update user" };
         }
-
-        if (isMounted.current) {
-          setUser(data.user);
-        }
-
-        return { success: true, message: data.message, user: data.user };
       } catch (error) {
-        return {
-          success: false,
-          message: error instanceof Error ? error.message : String(error),
-        };
-      } finally {
-        if (isMounted.current) setLoading(false);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return { success: false, message: errorMessage };
+      } finally { 
+        if (isMounted.current) {
+          setLoading(false);
+        }
       }
-    },
-    []
+    }, []
   );
 
-  // ---- DELETE USER ----
   const deleteUser = useCallback(async (id: string): Promise<DeleteUserResponse> => {
     try {
       setLoading(true);
-
-      const res = await fetch(`/api/users/${id}`, {
-        method: "DELETE",
-      });
-
+      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
       const data = await res.json();
-
-      if (!res.ok) {
-        return { success: false, message: data.message };
+      if (res.ok) {
+        if (isMounted.current) {
+          setUser(null);
+        }
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, message: data.message || "Failed to delete user" };
       }
-
-      if (isMounted.current) {
-        setUser(null);
-      }
-
-      return { success: true, message: data.message };
     } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : String(error),
-      };
-    } finally {
-      if (isMounted.current) setLoading(false);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, message: errorMessage };
+    } finally { 
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
-  // ---- FETCH BY ROLE ----
-  const fetchUserByRole = useCallback(
-    async (role: string): Promise<FetchUserResponse & { user?: User }> => {
-      try {
-        setLoading(true);
-
-        const res = await fetch(`/api/users?role=${role}`);
-        const data = await res.json();
-
-        if (!res.ok || !data.length) {
-          return { success: false, message: "No user found" };
-        }
-
-        const userData = data[0];
-
+  const fetchUserByRole = useCallback(async (role: string): Promise<FetchUserResponse & { user?: User }> => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/users?role=${role}`);
+      const data = await res.json();
+      if (res.ok && data.length > 0) {
+        const owner = data[0];
         if (isMounted.current) {
-          setUser(userData);
+          setUser(owner);
         }
-
-        return { success: true, user: userData };
-      } catch (error) {
-        return {
-          success: false,
-          message: error instanceof Error ? error.message : String(error),
-        };
-      } finally {
-        if (isMounted.current) setLoading(false);
+        return { success: true, user: owner };
+      } else {
+        return { success: false, message: "No user found with this role" };
       }
-    },
-    []
-  );
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : String(error) 
+      };
+    } finally { 
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
 
-  // ---- PUSHER (SAFE VERSION) ----
+  // ---- PUSHER REAL-TIME UPDATES ----
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
     isMounted.current = true;
-
+    
     const pusher = getPusherClient();
-    if (!pusher) return;
+    const channel = pusher.subscribe('users');
 
-    const channel = pusher.subscribe("users");
-
+    // Handle user update
     const handleUserUpdated = (updatedUser: User) => {
-      setUser((prev) => (prev?._id === updatedUser._id ? updatedUser : prev));
+      if (isMounted.current) {
+        setUser((currentUser) => {
+          if (currentUser?._id === updatedUser._id) {
+            return updatedUser;
+          }
+          return currentUser;
+        });
+      }
     };
 
-    const handleUserImageUpdated = ({ _id, image }: { _id: string; image: string }) => {
-      setUser((prev) =>
-        prev?._id === _id ? { ...prev, image } : prev
-      );
+    // Handle user image update
+    const handleUserImageUpdated = ({ _id, image, user }: { _id: string; image: string; user?: User }) => {
+      if (isMounted.current) {
+        setUser((currentUser) => {
+          if (currentUser?._id === _id) {
+            return { ...currentUser, image };
+          }
+          return currentUser;
+        });
+      }
     };
 
-    const handleUserDeleted = ({ _id }: { _id: string }) => {
-      setUser((prev) => (prev?._id === _id ? null : prev));
+    // Handle user deletion
+    const handleUserDeleted = ({ _id, userId }: { _id: string; userId?: string }) => {
+      const deletedUserId = _id || userId;
+      if (isMounted.current) {
+        setUser((currentUser) => {
+          if (currentUser?._id === deletedUserId) {
+            return null;
+          }
+          return currentUser;
+        });
+      }
+    };
+
+    // Handle new user creation (optional, for admin contexts)
+    const handleUserCreated = (newUser: User) => {
     };
 
     // Bind events
-    channel.bind("user-updated", handleUserUpdated);
-    channel.bind("user-image-updated", handleUserImageUpdated);
-    channel.bind("user-deleted", handleUserDeleted);
+    channel.bind('user-updated', handleUserUpdated);
+    channel.bind('user-image-updated', handleUserImageUpdated);
+    channel.bind('user-deleted', handleUserDeleted);
+    channel.bind('user-created', handleUserCreated);
 
+    // Cleanup
     return () => {
       isMounted.current = false;
-
-      channel.unbind("user-updated", handleUserUpdated);
-      channel.unbind("user-image-updated", handleUserImageUpdated);
-      channel.unbind("user-deleted", handleUserDeleted);
-
-      pusher.unsubscribe("users");
+      channel.unbind('user-updated', handleUserUpdated);
+      channel.unbind('user-image-updated', handleUserImageUpdated);
+      channel.unbind('user-deleted', handleUserDeleted);
+      channel.unbind('user-created', handleUserCreated);
+      pusher.unsubscribe('users');
     };
   }, []);
 
   return (
-    <UserContext.Provider
-      value={{
-        user,
-        loading,
-        fetchUser,
-        updateUser,
-        deleteUser,
+    <UserContext.Provider 
+      value={{ 
+        user, 
+        loading, 
+        fetchUser, 
+        updateUser, 
+        deleteUser, 
         fetchUserByRole,
-        setUser,
+        setUser
       }}
     >
       {children}
@@ -249,7 +224,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ---- HOOK ----
 export function useUser() {
   const context = useContext(UserContext);
   if (!context) throw new Error("useUser must be used inside UserProvider");
