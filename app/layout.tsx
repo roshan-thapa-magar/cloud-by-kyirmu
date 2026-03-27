@@ -20,15 +20,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Cloud by KYIRMU | Cafe & Organic Hub",
   description: "Enjoy fresh coffee, organic foods, and a healthy lifestyle experience.",
-  authors: [{ name: "Cloud by KYIRMU", url: "https://foodie-iota-topaz.vercel.app" }],
+  authors: [{ name: "Cloud by KYIRMU", url: "https://cloud-by-kyirmu.vercel.app" }],
   openGraph: {
     title: "Cloud by KYIRMU | Cafe & Organic Hub",
     description: "Enjoy fresh coffee, organic foods, and a healthy lifestyle experience.",
-    url: "https://foodie-iota-topaz.vercel.app",
+    url: "https://cloud-by-kyirmu.vercel.app",
     siteName: "Cloud by KYIRMU",
     images: [
       {
-        url: "https://foodie-iota-topaz.vercel.app/og-image1.png", // Must be correct
+        url: "https://cloud-by-kyirmu.vercel.app/og-image1.png", // Must be correct
         width: 1200,
         height: 630,
         alt: "Cloud by KYIRMU - Cafe & Organic Hub",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Cloud by KYIRMU | Cafe & Organic Hub",
     description: "Enjoy fresh coffee, organic foods, and a healthy lifestyle experience.",
-    images: ["https://foodie-iota-topaz.vercel.app/og-image1.png"],
+    images: ["https://cloud-by-kyirmu.vercel.app/og-image1.png"],
   },
 };
 

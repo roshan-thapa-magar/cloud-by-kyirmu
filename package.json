@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node server.js",
+    "dev": "next dev --turbopack",
     "dev:next": "next dev --turbopack",
     "build": "next build --turbopack",
-    "start": "NODE_ENV=production node server.js",
+    "start": "next start",
     "start:next": "next start",
     "lint": "eslint"
   },
