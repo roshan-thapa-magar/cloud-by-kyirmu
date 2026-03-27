@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { getPusherClient } from "@/lib/pusher-client";
-import { toast } from "sonner";
 
 interface User {
   _id: string;
@@ -79,15 +78,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           if (isMounted.current) {
             setUser(data.user);
           }
-          toast.success(data.message || "User updated successfully");
           return { success: true, message: data.message, user: data.user };
         } else {
-          toast.error(data.message || "Failed to update user");
           return { success: false, message: data.message || "Failed to update user" };
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        toast.error(errorMessage);
         return { success: false, message: errorMessage };
       } finally { 
         if (isMounted.current) {
@@ -106,15 +102,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         if (isMounted.current) {
           setUser(null);
         }
-        toast.success(data.message || "User deleted successfully");
         return { success: true, message: data.message };
       } else {
-        toast.error(data.message || "Failed to delete user");
         return { success: false, message: data.message || "Failed to delete user" };
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally { 
       if (isMounted.current) {
@@ -161,7 +154,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (isMounted.current) {
         setUser((currentUser) => {
           if (currentUser?._id === updatedUser._id) {
-            toast.info("Your profile has been updated");
             return updatedUser;
           }
           return currentUser;
@@ -174,7 +166,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (isMounted.current) {
         setUser((currentUser) => {
           if (currentUser?._id === _id) {
-            toast.success("Profile picture updated");
             return { ...currentUser, image };
           }
           return currentUser;
@@ -188,7 +179,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (isMounted.current) {
         setUser((currentUser) => {
           if (currentUser?._id === deletedUserId) {
-            toast.warning("Your account has been deleted");
             return null;
           }
           return currentUser;
@@ -198,7 +188,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     // Handle new user creation (optional, for admin contexts)
     const handleUserCreated = (newUser: User) => {
-      // You might want to handle this if you have an admin panel
       console.log("New user created:", newUser);
     };
 
@@ -217,7 +206,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       channel.unbind('user-created', handleUserCreated);
       pusher.unsubscribe('users');
     };
-  }, []); // Remove dependency on user?._id to avoid re-running effect
+  }, []);
 
   return (
     <UserContext.Provider 
