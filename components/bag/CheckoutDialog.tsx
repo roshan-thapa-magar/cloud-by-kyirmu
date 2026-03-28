@@ -1,19 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  DrawerClose,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +48,8 @@ const Checkout: React.FC<CheckoutProps> = ({
   const [note, setNote] = useState("");
   const [isMobile, setIsMobile] = useState(false);
 
+  const phoneRef = useRef<HTMLInputElement>(null);
+
   // Detect mobile
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -58,8 +58,20 @@ const Checkout: React.FC<CheckoutProps> = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Focus first input safely
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => {
+        phoneRef.current?.focus();
+      }, 100);
+    }
+  }, [open]);
+
   const handleSubmit = async () => {
-    if (!phone || !address) return toast.error("Phone and address required");
+    if (!phone || !address) {
+      toast.error("Phone and address required");
+      return;
+    }
 
     const success = await onSubmit(phone, paymentMethod, address, note);
 
@@ -72,6 +84,22 @@ const Checkout: React.FC<CheckoutProps> = ({
     }
   };
 
+  // ✅ Memoized map (prevents re-render focus loss)
+  const MapComponent = useMemo(
+    () => (
+      <GoogleMapComponent
+        onLocationSelect={(addr) => setAddress(addr)}
+        initialAddress={address}
+        containerStyle={{
+          width: "100%",
+          height: "200px",
+          borderRadius: 12,
+        }}
+      />
+    ),
+    []
+  );
+
   const paymentOptions = [
     { value: "cash", label: "Cash" },
     { value: "card", label: "Card" },
@@ -79,29 +107,19 @@ const Checkout: React.FC<CheckoutProps> = ({
   ];
 
   const FormContent = (
-    <div className="space-y-4 mt-2">
-      {/* Map (fixed layout issue) */}
-      <div className="shrink-0">
-        <GoogleMapComponent
-          onLocationSelect={(addr) => setAddress(addr)}
-          initialAddress={address}
-          containerStyle={{
-            width: "100%",
-            height: "200px",
-            borderRadius: 12,
-          }}
-        />
-      </div>
+    <div className="space-y-4">
+      {MapComponent}
 
       {/* Phone */}
       <div>
         <label className="text-sm">Phone Number</label>
         <Input
+          ref={phoneRef}
           type="tel"
           placeholder="Enter your phone number"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="outline-none focus:ring-0"
+          className="focus:outline-none focus:ring-1 focus:ring-gray-300"
         />
       </div>
 
@@ -113,7 +131,7 @@ const Checkout: React.FC<CheckoutProps> = ({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={3}
-          className="resize-none outline-none focus:ring-0"
+          className="focus:outline-none focus:ring-1 focus:ring-gray-300"
         />
       </div>
 
@@ -123,10 +141,10 @@ const Checkout: React.FC<CheckoutProps> = ({
         <RadioGroup
           value={paymentMethod}
           onValueChange={setPaymentMethod}
-          className="flex justify-between items-center"
+          className="flex justify-between"
         >
           {paymentOptions.map((option) => (
-            <div key={option.value} className="flex items-center space-x-2">
+            <div key={option.value} className="flex items-center gap-2">
               <RadioGroupItem value={option.value} id={option.value} />
               <label htmlFor={option.value} className="text-sm">
                 {option.label}
@@ -151,34 +169,35 @@ const Checkout: React.FC<CheckoutProps> = ({
   );
 
   return isMobile ? (
-    <Drawer open={open} onOpenChange={onOpenChange} modal={false}>
+    <Drawer
+      open={open}
+      onOpenChange={onOpenChange}
+      modal={false} // ✅ FIX
+    >
       <DrawerContent
-        className="rounded-t-lg p-4 max-h-[100dvh] flex flex-col"
-        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="rounded-t-lg p-4 max-h-[90vh] overflow-hidden"
+        onOpenAutoFocus={(e) => e.preventDefault()} // ✅ FIX
       >
         <DrawerHeader>
           <DrawerTitle>Enter Checkout Info</DrawerTitle>
-          <DrawerClose />
         </DrawerHeader>
 
-        {/* Scrollable area */}
-        <div className="flex-1 overflow-y-auto pr-1">
+        {/* ✅ scroll container */}
+        <div className="overflow-y-auto max-h-[70vh] pr-1">
           {FormContent}
         </div>
       </DrawerContent>
     </Drawer>
   ) : (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Enter Checkout Info</DialogTitle>
         </DialogHeader>
 
-        <div className="overflow-y-auto pr-1">
+        <div className="overflow-y-auto max-h-[70vh] pr-1">
           {FormContent}
         </div>
-
-        <DialogClose className="sr-only" />
       </DialogContent>
     </Dialog>
   );
