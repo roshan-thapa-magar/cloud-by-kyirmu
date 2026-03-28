@@ -55,16 +55,24 @@ export default function CategoriesPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   const [formOpen, setFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Add ref to track pending operations
+  // Add ref to track pending operations and pagination state
   const pendingOperations = useRef<Set<string>>(new Set());
   const isFirstLoad = useRef(true);
+  const currentPageRef = useRef(currentPage);
+  const rowsPerPageRef = useRef(rowsPerPage);
+
+  // Update refs when state changes
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+    rowsPerPageRef.current = rowsPerPage;
+  }, [currentPage, rowsPerPage]);
 
   /* ================= FETCH WITH PAGINATION ================= */
 
@@ -74,7 +82,7 @@ export default function CategoriesPage() {
       const response = await getCategories(currentPage, rowsPerPage);
       setCategories(response.categories);
       setTotalCount(response.total);
-      
+
       // If current page becomes empty and not first page, go to previous page
       if (response.categories.length === 0 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
@@ -88,7 +96,7 @@ export default function CategoriesPage() {
     }
   }, [currentPage, rowsPerPage]);
 
-  // Refetch when page, limit, or search changes
+  // Refetch when page or rows per page changes
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
@@ -100,23 +108,30 @@ export default function CategoriesPage() {
 
     // Handle category creation
     const handleCategoryCreated = (newCategory: Category) => {
-      
       // Check if this category was already added optimistically
       setCategories(prev => {
         // Prevent duplicate by checking if category already exists
         const exists = prev.some(cat => cat._id === newCategory._id);
         if (exists) return prev;
-        
-        // Only add to current page if on first page and there's space
-        if (currentPage === 1 && prev.length < rowsPerPage) {
-          return [newCategory, ...prev];
+
+        // Check if we're on the first page
+        if (currentPageRef.current === 1) {
+          // If we have space on the current page, add it
+          if (prev.length < rowsPerPageRef.current) {
+            return [newCategory, ...prev];
+          }
+          // If no space, remove the last item and add the new one at the top
+          else {
+            return [newCategory, ...prev.slice(0, -1)];
+          }
         }
+        // If not on first page, don't add to current view, but update total count
         return prev;
       });
-      
-      // Only update total count if it wasn't already updated
+
+      // Update total count
       setTotalCount(prev => {
-        // Check if this category was already counted
+        // Check if this category was already counted from optimistic update
         const wasAdded = pendingOperations.current.has(newCategory._id);
         if (wasAdded) {
           pendingOperations.current.delete(newCategory._id);
@@ -124,8 +139,8 @@ export default function CategoriesPage() {
         }
         return prev + 1;
       });
-      
-      toast.success(`New category "${newCategory.categoryName}" added`);
+
+      // toast.success(`New category "${newCategory.categoryName}" added`);
     };
 
     // Handle category update
@@ -145,12 +160,19 @@ export default function CategoriesPage() {
 
     // Handle category deletion
     const handleCategoryDeleted = (data: { _id: string }) => {
-      const deletedCategory = categories.find(c => c._id === data._id);
-      setCategories(prev => prev.filter(c => c._id !== data._id));
+      // Find the deleted category before removing it
+      let deletedCategoryName = '';
+      setCategories(prev => {
+        const deleted = prev.find(c => c._id === data._id);
+        if (deleted) {
+          deletedCategoryName = deleted.categoryName;
+        }
+        return prev.filter(c => c._id !== data._id);
+      });
       setTotalCount(prev => prev - 1);
-      
-      if (deletedCategory) {
-        toast.info(`Category "${deletedCategory.categoryName}" deleted`);
+
+      if (deletedCategoryName) {
+        toast.info(`Category "${deletedCategoryName}" deleted`);
       }
     };
 
@@ -176,35 +198,59 @@ export default function CategoriesPage() {
       channel.unbind('categories-bulk-update', handleCategoriesBulkUpdate);
       pusher.unsubscribe('categories');
     };
-  }, [currentPage, rowsPerPage, categories]);
+  }, []); // Remove dependencies to prevent re-subscription
 
   /* ================= CREATE ================= */
 
   const handleCreateCategory = async (values: any) => {
     try {
       const newCategory = await createCategory(values);
-      
+
       // Add to pending operations to track
       pendingOperations.current.add(newCategory._id);
-      
+
       // Update state with the new category
       setCategories((prev) => {
         // Check if category already exists (to prevent duplicates)
         const exists = prev.some(cat => cat._id === newCategory._id);
         if (exists) return prev;
-        
-        // Only add if on first page and there's space
-        if (currentPage === 1 && prev.length < rowsPerPage) {
-          return [newCategory, ...prev];
+
+        // Only add if on first page
+        if (currentPage === 1) {
+          // If we have space on the current page, add it
+          if (prev.length < rowsPerPage) {
+            return [newCategory, ...prev];
+          }
+          // If no space, remove the last item and add the new one at the top
+          else {
+            return [newCategory, ...prev.slice(0, -1)];
+          }
         }
         return prev;
       });
-      
+
       // Update total count
       setTotalCount((prev) => prev + 1);
-      
-      toast.success("Category created successfully");
+
+      // toast.success("Category created successfully");
       setFormOpen(false);
+
+      // If not on first page, show a notification that the category was added
+      const message =
+        currentPage !== 1
+          ? `Category "${newCategory.categoryName}" added and moved to page 1`
+          : `Category "${newCategory.categoryName}" added successfully`;
+
+      if (currentPage !== 1) {
+        toast.info(message, {
+          action: {
+            label: "Go to page 1",
+            onClick: () => setCurrentPage(1),
+          },
+        });
+      } else {
+        toast.info(message);
+      }
     } catch (error: any) {
       const msg =
         error?.response?.data?.message || error?.message || "Failed to create category";
@@ -254,7 +300,7 @@ export default function CategoriesPage() {
       );
       setTotalCount((prev) => prev - 1);
 
-      toast.success("Category deleted successfully");
+      // toast.success("Category deleted successfully");
       setDeleteOpen(false);
       setSelectedCategory(null);
     } catch (error: any) {
@@ -368,7 +414,7 @@ export default function CategoriesPage() {
         <DialogContent>
           <DialogTitle>{editingCategory ? "Edit Category" : "Add Category"}</DialogTitle>
           <FormBuilder
-            title="" 
+            title=""
             fields={categoryFields}
             defaultValues={editingCategory || {}}
             onSubmit={
