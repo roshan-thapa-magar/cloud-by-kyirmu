@@ -48,11 +48,11 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://cloud-by-kyirmu.vercel.app/og-image.jpg",
+        url: "https://cloud-by-kyirmu.vercel.app/og-image1.png", // PNG works perfectly
         width: 1200,
         height: 630,
         alt: "Cloud by KYIRMU - Premium Cafe & Organic Hub",
-        type: "image/jpeg",
+        type: "image/png", // Specify PNG type
       },
     ],
   },
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Cloud by KYIRMU | Premium Cafe & Organic Hub",
     description: "Experience the perfect blend of fresh coffee and organic foods. Your destination for healthy lifestyle choices.",
-    images: ["https://cloud-by-kyirmu.vercel.app/og-image.jpg"],
+    images: ["https://cloud-by-kyirmu.vercel.app/og-image1.png"], // PNG also works here
     creator: "@cloudbykyirmu",
     site: "@cloudbykyirmu",
   },
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     canonical: "https://cloud-by-kyirmu.vercel.app",
   },
   verification: {
-    google: "your-google-site-verification-code", // Add your Google Search Console verification code here
+    google: "your-google-site-verification-code",
   },
   category: "food & beverage",
 };
