@@ -1,24 +1,27 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
+  DrawerClose,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Textarea } from "../ui/textarea";
-import { useUser } from "@/context/UserContext";
+import { useUser } from "@/context/UserContext"
 import { Loader2 } from "lucide-react";
 import GoogleMapComponent from "@/components/google-map-component";
 
@@ -34,23 +37,15 @@ interface CheckoutProps {
   ) => Promise<boolean>;
 }
 
-const Checkout: React.FC<CheckoutProps> = ({
-  open,
-  onOpenChange,
-  onSubmit,
-  orderLoading,
-}) => {
-  const { user } = useUser();
-
+const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, orderLoading }) => {
+  const { user } = useUser()
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [phone, setPhone] = useState(user?.phone || "");
   const [address, setAddress] = useState(user?.address || "");
   const [note, setNote] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  const phoneRef = useRef<HTMLInputElement>(null);
-
-  // Detect mobile
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
@@ -58,72 +53,73 @@ const Checkout: React.FC<CheckoutProps> = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Focus first input safely
+  // Handle body scroll and viewport issues
   useEffect(() => {
-    if (open) {
+    if (open && isMobile) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      
+      return () => {
+        document.body.style.overflow = originalStyle;
+        document.body.style.position = '';
+        document.body.style.width = '';
+      };
+    }
+  }, [open, isMobile]);
+
+  // Scroll to top when drawer opens
+  useEffect(() => {
+    if (open && contentRef.current) {
       setTimeout(() => {
-        phoneRef.current?.focus();
+        contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       }, 100);
     }
   }, [open]);
 
   const handleSubmit = async () => {
-    if (!phone || !address) {
-      toast.error("Phone and address required");
-      return;
-    }
+    if (!phone || !address) return toast.error("Phone and address required");
 
     const success = await onSubmit(phone, paymentMethod, address, note);
 
     if (success) {
       onOpenChange(false);
-      setPhone("");
-      setAddress("");
-      setNote("");
+      setPhone(""); 
+      setAddress(""); 
+      setNote(""); 
       setPaymentMethod("cash");
     }
   };
 
-  // ✅ Memoized map (prevents re-render focus loss)
-  const MapComponent = useMemo(
-    () => (
-      <GoogleMapComponent
-        onLocationSelect={(addr) => setAddress(addr)}
-        initialAddress={address}
-        containerStyle={{
-          width: "100%",
-          height: "200px",
-          borderRadius: 12,
-        }}
-      />
-    ),
-    []
-  );
-
   const paymentOptions = [
     { value: "cash", label: "Cash" },
     { value: "card", label: "Card" },
-    { value: "online", label: "Online" },
+    { value: "online", label: "online" },
   ];
 
   const FormContent = (
-    <div className="space-y-4">
-      {MapComponent}
-
-      {/* Phone */}
+    <div className="space-y-4 mt-2">
+      <GoogleMapComponent
+        onLocationSelect={(addr) => setAddress(addr)}
+        initialAddress={address}
+        containerStyle={{ 
+          width: "100%", 
+          height: isMobile ? "150px" : "200px", 
+          borderRadius: 12 
+        }}
+      />
+      
       <div>
         <label className="text-sm">Phone Number</label>
         <Input
-          ref={phoneRef}
           type="tel"
           placeholder="Enter your phone number"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="focus:outline-none focus:ring-1 focus:ring-gray-300"
         />
       </div>
-
-      {/* Note */}
+      
       <div>
         <label className="text-sm">Note (optional)</label>
         <Textarea
@@ -131,20 +127,18 @@ const Checkout: React.FC<CheckoutProps> = ({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={3}
-          className="focus:outline-none focus:ring-1 focus:ring-gray-300"
         />
       </div>
-
-      {/* Payment */}
+      
       <div>
         <label className="text-sm mb-2 block">Payment Method</label>
         <RadioGroup
           value={paymentMethod}
           onValueChange={setPaymentMethod}
-          className="flex justify-between"
+          className="flex justify-between items-center"
         >
           {paymentOptions.map((option) => (
-            <div key={option.value} className="flex items-center gap-2">
+            <div key={option.value} className="flex items-center space-x-2">
               <RadioGroupItem value={option.value} id={option.value} />
               <label htmlFor={option.value} className="text-sm">
                 {option.label}
@@ -154,50 +148,46 @@ const Checkout: React.FC<CheckoutProps> = ({
         </RadioGroup>
       </div>
 
-      {/* Submit */}
       <Button className="w-full" disabled={orderLoading} onClick={handleSubmit}>
         {orderLoading ? (
           <div className="flex items-center gap-2">
-            <Loader2 className="animate-spin" />
-            Submitting...
+            <Loader2 className="animate-spin mr-2" /> Submitting...
           </div>
-        ) : (
-          "Submit"
-        )}
+        ) : "Submit"}
       </Button>
     </div>
   );
 
   return isMobile ? (
-    <Drawer
-      open={open}
-      onOpenChange={onOpenChange}
-      modal={false} // ✅ FIX
-    >
-      <DrawerContent
-        className="rounded-t-lg p-4 max-h-[90vh] overflow-hidden"
-        onOpenAutoFocus={(e) => e.preventDefault()} // ✅ FIX
-      >
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="rounded-t-lg p-4">
         <DrawerHeader>
           <DrawerTitle>Enter Checkout Info</DrawerTitle>
+          <DrawerClose />
         </DrawerHeader>
-
-        {/* ✅ scroll container */}
-        <div className="overflow-y-auto max-h-[70vh] pr-1">
+        <div 
+          ref={contentRef}
+          className="overflow-y-auto"
+          style={{
+            maxHeight: 'calc(80vh - 80px)',
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+          }}
+        >
           {FormContent}
         </div>
       </DrawerContent>
     </Drawer>
   ) : (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Enter Checkout Info</DialogTitle>
         </DialogHeader>
-
-        <div className="overflow-y-auto max-h-[70vh] pr-1">
+        <div className="overflow-y-auto max-h-[60vh]">
           {FormContent}
         </div>
+        <DialogClose className="sr-only" />
       </DialogContent>
     </Dialog>
   );
