@@ -6,10 +6,11 @@ import { toast } from "sonner";
 import { useUser } from "@/context/UserContext";
 import { useSession } from "next-auth/react";
 import GoogleMapComponent from "@/components/google-map-component";
+import { Loader2 } from "lucide-react";
 
 export default function AddressBook() {
   const { data: session } = useSession();
-  const { user, fetchUser, updateUser } = useUser();
+  const { user, fetchUser, updateUser,loading } = useUser();
   const userId = session?.user?._id;
 
   const [address, setAddress] = useState(""); // lat,lng string
@@ -50,8 +51,13 @@ export default function AddressBook() {
         <p>{address || "No location selected"}</p>
       </div>
 
-      <Button onClick={handleUpdate} className="w-full">
-        Save Address
+     <Button
+        onClick={handleUpdate}
+        className="w-full flex items-center justify-center gap-2"
+        disabled={loading}
+      >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+        {loading ? "Saving..." : "Save Address"}
       </Button>
     </div>
   );
