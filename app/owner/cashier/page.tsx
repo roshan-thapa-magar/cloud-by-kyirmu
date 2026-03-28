@@ -232,7 +232,7 @@ export default function ActiveOrdersPage() {
                 variant="outline"
                 onClick={() => handleCopyAddress(order.address)}
               >
-                Copy Map
+                Copy Address
               </Button>
             )}
           </div>
