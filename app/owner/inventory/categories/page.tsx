@@ -368,7 +368,7 @@ export default function CategoriesPage() {
         <DialogContent>
           <DialogTitle>{editingCategory ? "Edit Category" : "Add Category"}</DialogTitle>
           <FormBuilder
-            title={editingCategory ? "Edit Category" : "Add Category"}
+            title="" 
             fields={categoryFields}
             defaultValues={editingCategory || {}}
             onSubmit={
