@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
 import {
   Dialog,
   DialogContent,
@@ -21,15 +20,13 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Textarea } from "../ui/textarea";
-import { useUser } from "@/context/UserContext"
+import { useUser } from "@/context/UserContext";
 import { Loader2 } from "lucide-react";
 import GoogleMapComponent from "@/components/google-map-component";
-
 
 interface CheckoutProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  // Return true if successful, false otherwise
   orderLoading?: boolean;
   onSubmit: (
     phone: string,
@@ -39,15 +36,21 @@ interface CheckoutProps {
   ) => Promise<boolean>;
 }
 
-const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, orderLoading }) => {
-  const { user } = useUser()
+const Checkout: React.FC<CheckoutProps> = ({
+  open,
+  onOpenChange,
+  onSubmit,
+  orderLoading,
+}) => {
+  const { user } = useUser();
+
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [phone, setPhone] = useState(user?.phone || "");
   const [address, setAddress] = useState(user?.address || "");
-  const [note, setNote] = useState(""); // <- note state
+  const [note, setNote] = useState("");
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detect mobile screens
+  // Detect mobile
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
@@ -62,26 +65,35 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
 
     if (success) {
       onOpenChange(false);
-      setPhone(""); setAddress(""); setNote(""); setPaymentMethod("cash");
+      setPhone("");
+      setAddress("");
+      setNote("");
+      setPaymentMethod("cash");
     }
   };
 
-
-  // Payment options
   const paymentOptions = [
     { value: "cash", label: "Cash" },
     { value: "card", label: "Card" },
-    { value: "online", label: "online" },
+    { value: "online", label: "Online" },
   ];
 
   const FormContent = (
     <div className="space-y-4 mt-2">
-      <GoogleMapComponent
-        onLocationSelect={(addr) => setAddress(addr)}
-        initialAddress={address}
-        containerStyle={{ width: "100%", height: "200px", borderRadius: 12 }}
-      />
-      {/* Phone Number */}
+      {/* Map (fixed layout issue) */}
+      <div className="shrink-0">
+        <GoogleMapComponent
+          onLocationSelect={(addr) => setAddress(addr)}
+          initialAddress={address}
+          containerStyle={{
+            width: "100%",
+            height: "200px",
+            borderRadius: 12,
+          }}
+        />
+      </div>
+
+      {/* Phone */}
       <div>
         <label className="text-sm">Phone Number</label>
         <Input
@@ -89,8 +101,11 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
           placeholder="Enter your phone number"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          className="outline-none focus:ring-0"
         />
       </div>
+
+      {/* Note */}
       <div>
         <label className="text-sm">Note (optional)</label>
         <Textarea
@@ -98,9 +113,11 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={3}
+          className="resize-none outline-none focus:ring-0"
         />
       </div>
-      {/* Payment Method */}
+
+      {/* Payment */}
       <div>
         <label className="text-sm mb-2 block">Payment Method</label>
         <RadioGroup
@@ -116,39 +133,51 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
               </label>
             </div>
           ))}
-
         </RadioGroup>
       </div>
 
-
       {/* Submit */}
       <Button className="w-full" disabled={orderLoading} onClick={handleSubmit}>
-        {orderLoading ? <div className="flex items-center gap-2"><Loader2 className="animate-spin mr-2" /> Submiting...</div> : "Submit"}
+        {orderLoading ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="animate-spin" />
+            Submitting...
+          </div>
+        ) : (
+          "Submit"
+        )}
       </Button>
     </div>
   );
 
   return isMobile ? (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="rounded-t-lg p-4">
+    <Drawer open={open} onOpenChange={onOpenChange} modal={false}>
+      <DrawerContent
+        className="rounded-t-lg p-4 max-h-[100dvh] flex flex-col"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DrawerHeader>
           <DrawerTitle>Enter Checkout Info</DrawerTitle>
           <DrawerClose />
         </DrawerHeader>
-        <div className="overflow-y-auto">
+
+        {/* Scrollable area */}
+        <div className="flex-1 overflow-y-auto pr-1">
           {FormContent}
         </div>
       </DrawerContent>
     </Drawer>
   ) : (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Enter Checkout Info</DialogTitle>
         </DialogHeader>
-        <div className="overflow-y-auto max-h-[60vh]">
+
+        <div className="overflow-y-auto pr-1">
           {FormContent}
         </div>
+
         <DialogClose className="sr-only" />
       </DialogContent>
     </Dialog>
