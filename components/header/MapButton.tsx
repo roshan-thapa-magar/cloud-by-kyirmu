@@ -1,22 +1,18 @@
 "use client";
 
 import { MapPinnedIcon } from "lucide-react";
-import { useUser } from "@/context/UserContext";
+import { fetchOwner, User } from "@/services/user.service";
 import { useEffect, useState } from "react";
 
 export const MapButton: React.FC<{ size?: number }> = ({ size = 20 }) => {
-  const { fetchUserByRole } = useUser();
-  const [destination, setDestination] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
+  const [destination, setDestination] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     const loadOwner = async () => {
-      const res = await fetchUserByRole("owner");
+      const owner = await fetchOwner();
 
-      if (res.success && res.user?.address) {
-        const parts = res.user.address.split(",");
+      if (owner?.address) {
+        const parts = owner.address.split(",");
 
         if (parts.length === 2) {
           const lat = parseFloat(parts[0]);
@@ -30,7 +26,7 @@ export const MapButton: React.FC<{ size?: number }> = ({ size = 20 }) => {
     };
 
     loadOwner();
-  }, [fetchUserByRole]);
+  }, []); // fetchOwner is already imported, no need in dependency array
 
   const handleClick = () => {
     if (!destination) return;
@@ -46,7 +42,6 @@ export const MapButton: React.FC<{ size?: number }> = ({ size = 20 }) => {
         const originLng = position.coords.longitude;
 
         const url = `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
-
         window.open(url, "_blank");
       },
       () => {
@@ -58,10 +53,7 @@ export const MapButton: React.FC<{ size?: number }> = ({ size = 20 }) => {
   };
 
   return (
-    <div
-      onClick={handleClick}
-      className="flex items-center gap-4 cursor-pointer"
-    >
+    <div onClick={handleClick} className="flex items-center gap-4 cursor-pointer">
       <MapPinnedIcon size={size} />
       <span className="md:hidden">Location</span>
     </div>

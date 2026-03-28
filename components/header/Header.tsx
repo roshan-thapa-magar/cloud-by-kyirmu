@@ -1,25 +1,36 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useSession } from "next-auth/react"
-import { Phone, MousePointer2, User } from "lucide-react"
-import SearchBar from "./SearchBar"
-import UserAvatar from "./UserAvatar"
-import Notifications from "./Notifications"
-import ShoppingBagIcon from "./Bag"
-import MobileMenu from "./MobileMenu"
-import { useAuthModal } from "@/context/auth-modal-context"
-import { useUser } from "@/context/UserContext"
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { Phone, User } from "lucide-react";
+import SearchBar from "./SearchBar";
+import UserAvatar from "./UserAvatar";
+import Notifications from "./Notifications";
+import ShoppingBagIcon from "./Bag";
+import MobileMenu from "./MobileMenu";
+import { useAuthModal } from "@/context/auth-modal-context";
+import { fetchOwner } from "@/services/user.service";
 import { MapButton } from "./MapButton"; // adjust path
-import Image from "next/image"
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 const Header = () => {
-  const { openModal } = useAuthModal()
-  const { data: session, status } = useSession()
-  const { user } = useUser()
+  const { openModal } = useAuthModal();
+  const { data: session, status } = useSession();
+  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
 
-  const phoneNumber = user?.phone
-  const message = "Hello! I'd like to inquire about your services."
+  useEffect(() => {
+    const getOwner = async () => {
+      const owner = await fetchOwner();
+      if (owner?.phone) {
+        setPhoneNumber(owner.phone);
+      }
+    };
+
+    getOwner();
+  }, []);
+
+  const message = "Hello! I'd like to inquire about your services.";
 
   return (
     <header className="w-full shadow-sm">
@@ -30,7 +41,6 @@ const Header = () => {
             <MobileMenu />
           </div>
           <Link href="/" className="flex items-center cursor-pointer">
-            {/* Logo container */}
             <div className="relative w-20 h-20 -ml-6 hidden md:flex">
               <Image
                 src="/images/logo2.png"
@@ -41,17 +51,16 @@ const Header = () => {
                 priority
               />
             </div>
-            <h1
-              className="text-2xl md:text-3xl font-extrabold m-0"
-            >
+            <h1 className="text-2xl md:text-3xl font-extrabold m-0">
               KYIRMU
             </h1>
           </Link>
         </div>
 
         {/* Center / Right: Search + Icons */}
-        <div className="flex items-center gap-4 ">
+        <div className="flex items-center gap-4">
           <SearchBar />
+
           {/* Phone / WhatsApp Contact */}
           {phoneNumber && (
             <div className="flex items-center gap-2 hidden md:flex cursor-pointer">
@@ -68,30 +77,17 @@ const Header = () => {
             </div>
           )}
 
-          {/* Theme toggle */}
+          {/* Map / Location */}
           <div className="hidden md:flex items-center gap-6">
             <MapButton />
           </div>
 
-
-          {/* Offers Icon */}
-          {/* <div className="hidden md:flex items-center gap-6">
-            <MousePointer2
-              onClick={() => router.push("/allOffers")}
-              className="w-5 h-5 cursor-pointer"
-            />
-          </div> */}
-
-          {/* Notifications and Bag */}
-          {status === "authenticated" && session?.user?.role == "user" ? (
-            <Notifications userId={user?._id || ""} />
-          ) : ""}
-
+          {/* Shopping Bag */}
           <ShoppingBagIcon />
 
           {/* User Avatar / Login */}
           <div className="hidden md:flex">
-            {status === "authenticated" && session?.user?.role == "user" ? (
+            {status === "authenticated" && session?.user?.role === "user" ? (
               <UserAvatar />
             ) : (
               <div onClick={openModal} className="cursor-pointer">
@@ -101,8 +97,8 @@ const Header = () => {
           </div>
         </div>
       </div>
-    </header >
-  )
-}
+    </header>
+  );
+};
 
-export default Header
+export default Header;

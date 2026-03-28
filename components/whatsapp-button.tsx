@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FaWhatsapp } from "react-icons/fa";
-import { useUser } from "@/context/UserContext";
+import { fetchOwner } from "@/services/user.service";
+import { useEffect, useState } from "react";
 
 interface WhatsAppButtonProps {
   className?: string;
@@ -8,12 +9,20 @@ interface WhatsAppButtonProps {
 }
 
 export function WhatsAppButton({ className = "", size = "lg" }: WhatsAppButtonProps) {
-  const { user } = useUser();
+  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
 
-  const phoneNumber = user?.phone;
+  useEffect(() => {
+      const getOwner = async () => {
+        const owner = await fetchOwner();
+        if (owner?.phone) {
+          setPhoneNumber(owner.phone);
+        }
+      };
+  
+      getOwner();
+    }, []);
   const message = "Hello! I'd like to inquire about your services.";
 
-  if (!phoneNumber) return null; // Don't render if no phone
 
   const sizeClasses = {
     sm: "w-8 h-8 text-xl",

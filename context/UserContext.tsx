@@ -48,7 +48,6 @@ interface UserContextType {
     data: { name?: string; image?: string; phone?: string; address?: string }
   ) => Promise<UpdateUserResponse>;
   deleteUser: (id: string) => Promise<DeleteUserResponse>;
-  fetchUserByRole: (role: string) => Promise<FetchUserResponse & { user?: User }>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
@@ -159,38 +158,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ---- FETCH BY ROLE ----
-  const fetchUserByRole = useCallback(
-    async (role: string): Promise<FetchUserResponse & { user?: User }> => {
-      try {
-        setLoading(true);
-
-        const res = await fetch(`/api/users?role=${role}`);
-        const data = await res.json();
-
-        if (!res.ok || !data.length) {
-          return { success: false, message: "No user found" };
-        }
-
-        const userData = data[0];
-
-        if (isMounted.current) {
-          setUser(userData);
-        }
-
-        return { success: true, user: userData };
-      } catch (error) {
-        return {
-          success: false,
-          message: error instanceof Error ? error.message : String(error),
-        };
-      } finally {
-        if (isMounted.current) setLoading(false);
-      }
-    },
-    []
-  );
-
   // ---- PUSHER (SAFE VERSION) ----
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -240,7 +207,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         fetchUser,
         updateUser,
         deleteUser,
-        fetchUserByRole,
         setUser,
       }}
     >

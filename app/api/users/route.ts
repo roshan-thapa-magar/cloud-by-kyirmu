@@ -94,11 +94,20 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+
+
+export async function GET(request: Request) {
   try {
     await connectMongoDB();
 
-    const users = await User.find({}).select("-password");
+    const url = new URL(request.url);
+    const role = url.searchParams.get("role"); // get role from query string
+
+    // Build the filter dynamically
+    const filter = role ? { role } : {};
+
+    // Find users with the filter, always exclude password
+    const users = await User.find(filter).select("-password");
 
     return NextResponse.json(users, { status: 200 });
   } catch (error) {
