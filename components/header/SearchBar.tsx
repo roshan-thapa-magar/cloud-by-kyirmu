@@ -10,7 +10,7 @@ import { useSession } from "next-auth/react"
 import { useAuthModal } from "@/context/auth-modal-context"
 
 const SearchBar = () => {
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const { openModal } = useAuthModal()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [items, setItems] = useState<any[]>([])
@@ -50,7 +50,11 @@ const SearchBar = () => {
       openModal()
       return
     }
-    
+    if (session?.user?.role !== "user") {
+      openModal()
+      return
+    }
+
     setSelectedItem(item)
     setSearch("")      // close dropdown
     setMobileOpen(false) // close mobile search if open
