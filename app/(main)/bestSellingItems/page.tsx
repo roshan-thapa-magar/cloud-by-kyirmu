@@ -249,7 +249,6 @@ export default function Page() {
                   <Loader className="animate-spin h-6 w-6 text-primary" />
                   <span className="ml-2 text-sm text-muted-foreground">Loading more items...</span>
                 </div>
-                <ComboSkeleton count={4} />
               </div>
             )}
 
