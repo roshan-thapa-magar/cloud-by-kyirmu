@@ -145,6 +145,8 @@ export async function PUT(
   }
 }
 
+// api/users/[id]/route.ts (the DELETE function only)
+
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -178,10 +180,26 @@ export async function DELETE(
       }, { status: 400 });
     }
     
+    // Get pending orders before deletion to trigger individual events
+    const pendingOrders = await Order.find({
+      userId: id,
+      status: "pending",
+    });
+    
+    // Delete pending orders
     await Order.deleteMany({
       userId: id,
       status: "pending",
     });
+    
+    // Trigger individual order deletion events for better UI updates
+    for (const order of pendingOrders) {
+      try {
+        await pusherServer.trigger('admin-orders', 'order-deleted', order);
+      } catch (err) {
+        console.error(`Failed to trigger deletion event for order ${order._id}:`, err);
+      }
+    }
     
     // Background image & bag items deletion
     (async () => {

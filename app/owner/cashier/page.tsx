@@ -1,5 +1,3 @@
-// app/(admin)/orders/active/page.tsx
-
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
@@ -119,13 +117,19 @@ export default function ActiveOrdersPage() {
       toast.info(`Order #${updatedOrder.orderId} status changed to ${updatedOrder.status}`);
     };
 
+    // Handle user deletion specifically
+    const handleUserDelete = (data: { _id: string; userId: string }) => {
+      // Refresh the orders list to remove orders from deleted user
+      fetchOrders();
+      toast.info(`User ${data.userId} has been deleted. Their pending orders have been removed.`);
+    };
+
     // Bind all events
     channel.bind('new-order', handleNewOrder);
     channel.bind('order-updated', handleOrderUpdate);
     channel.bind('order-deleted', handleOrderDelete);
     channel.bind('order-status-updated', handleStatusUpdate);
-    channel.bind('user-deleted', handleStatusUpdate);
-
+    channel.bind('user-deleted', handleUserDelete);
 
     // Cleanup
     return () => {
@@ -133,7 +137,7 @@ export default function ActiveOrdersPage() {
       channel.unbind('order-updated', handleOrderUpdate);
       channel.unbind('order-deleted', handleOrderDelete);
       channel.unbind('order-status-updated', handleStatusUpdate);
-      channel.unbind('user-deleted', handleStatusUpdate);
+      channel.unbind('user-deleted', handleUserDelete);
       pusher.unsubscribe('admin-orders');
     };
   }, [fetchOrders]);
