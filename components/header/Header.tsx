@@ -86,7 +86,7 @@ const Header = () => {
           <ShoppingBagIcon />
 
           {/* User Avatar / Login */}
-          <div className="hidden md:flex">
+          <div>
             {status === "authenticated" && session?.user?.role === "user" ? (
               <UserAvatar />
             ) : (

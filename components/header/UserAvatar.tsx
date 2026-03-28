@@ -45,7 +45,7 @@ const UserAvatar = () => {
         </Avatar>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-52">
+      <DropdownMenuContent align="end" className={`w-52 ${role === "user" ? "hidden md:block":""}`}>
         {/* Profile */}
         <DropdownMenuItem asChild className="cursor-pointer">
           <Link href={profilePath}>View Profile</Link>
