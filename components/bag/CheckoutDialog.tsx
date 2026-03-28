@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
   Dialog,
@@ -44,14 +44,8 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [phone, setPhone] = useState(user?.phone || "");
   const [address, setAddress] = useState(user?.address || "");
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(""); // <- note state
   const [isMobile, setIsMobile] = useState(false);
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  
-  // Refs for inputs to handle scrolling
-  const phoneRef = useRef<HTMLInputElement>(null);
-  const noteRef = useRef<HTMLTextAreaElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   // Detect mobile screens
   useEffect(() => {
@@ -61,46 +55,6 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Handle keyboard visibility for mobile
-  useEffect(() => {
-    if (!isMobile || !open) return;
-
-    const handleResize = () => {
-      // Detect if keyboard is open by checking viewport height
-      const isKeyboard = window.innerHeight < window.screen.height * 0.75;
-      setIsKeyboardOpen(isKeyboard);
-      
-      if (isKeyboard && contentRef.current) {
-        // Scroll the active input into view
-        const activeElement = document.activeElement;
-        if (activeElement && contentRef.current.contains(activeElement)) {
-          setTimeout(() => {
-            activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 100);
-        }
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isMobile, open]);
-
-  // Reset form when dialog/drawer closes
-  useEffect(() => {
-    if (!open) {
-      // Don't reset immediately, give time for animation
-      const timer = setTimeout(() => {
-        if (!open) {
-          setPhone(user?.phone || "");
-          setAddress(user?.address || "");
-          setNote("");
-          setPaymentMethod("cash");
-        }
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [open, user?.phone, user?.address]);
-
   const handleSubmit = async () => {
     if (!phone || !address) return toast.error("Phone and address required");
 
@@ -108,116 +62,91 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
 
     if (success) {
       onOpenChange(false);
+      setPhone(""); setAddress(""); setNote(""); setPaymentMethod("cash");
     }
   };
+
 
   // Payment options
   const paymentOptions = [
     { value: "cash", label: "Cash" },
     { value: "card", label: "Card" },
-    { value: "online", label: "Online" },
+    { value: "online", label: "online" },
   ];
 
   const FormContent = (
-    <div 
-      ref={contentRef}
-      className="space-y-4 mt-2"
-      style={{
-        paddingBottom: isKeyboardOpen ? "20px" : "0"
-      }}
-    >
+    <div className="space-y-4 mt-2">
       <GoogleMapComponent
         onLocationSelect={(addr) => setAddress(addr)}
         initialAddress={address}
         containerStyle={{ width: "100%", height: "200px", borderRadius: 12 }}
       />
-      
       {/* Phone Number */}
       <div>
-        <label className="text-sm font-medium block mb-2">Phone Number</label>
+        <label className="text-sm">Phone Number</label>
         <Input
-          ref={phoneRef}
           type="tel"
           placeholder="Enter your phone number"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="h-11"
         />
       </div>
-      
-      {/* Note */}
       <div>
-        <label className="text-sm font-medium block mb-2">Note (optional)</label>
+        <label className="text-sm">Note (optional)</label>
         <Textarea
-          ref={noteRef}
           placeholder="Add a note for your order..."
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={3}
-          className="resize-none"
         />
       </div>
-      
       {/* Payment Method */}
       <div>
-        <label className="text-sm font-medium block mb-2">Payment Method</label>
+        <label className="text-sm mb-2 block">Payment Method</label>
         <RadioGroup
           value={paymentMethod}
           onValueChange={setPaymentMethod}
-          className="flex justify-between items-center gap-4"
+          className="flex justify-between items-center"
         >
           {paymentOptions.map((option) => (
             <div key={option.value} className="flex items-center space-x-2">
               <RadioGroupItem value={option.value} id={option.value} />
-              <label htmlFor={option.value} className="text-sm cursor-pointer">
+              <label htmlFor={option.value} className="text-sm">
                 {option.label}
               </label>
             </div>
           ))}
+
         </RadioGroup>
       </div>
 
-      {/* Submit Button */}
-      <Button 
-        className="w-full h-11 mt-4" 
-        disabled={orderLoading} 
-        onClick={handleSubmit}
-      >
-        {orderLoading ? (
-          <div className="flex items-center gap-2">
-            <Loader2 className="animate-spin" /> 
-            Submitting...
-          </div>
-        ) : (
-          "Submit Order"
-        )}
+
+      {/* Submit */}
+      <Button className="w-full" disabled={orderLoading} onClick={handleSubmit}>
+        {orderLoading ? <div className="flex items-center gap-2"><Loader2 className="animate-spin mr-2" /> Submiting...</div> : "Submit"}
       </Button>
     </div>
   );
 
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="rounded-t-lg max-h-[90vh] overflow-hidden">
-          <DrawerHeader className="sticky top-0 bg-background z-10 border-b">
-            <DrawerTitle>Enter Checkout Info</DrawerTitle>
-            <DrawerClose />
-          </DrawerHeader>
-          <div className="flex-1 overflow-y-auto p-4 pt-0">
-            {FormContent}
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
-  return (
+  return isMobile ? (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="rounded-t-lg p-4">
+        <DrawerHeader>
+          <DrawerTitle>Enter Checkout Info</DrawerTitle>
+          <DrawerClose />
+        </DrawerHeader>
+        <div className="overflow-y-auto">
+          {FormContent}
+        </div>
+      </DrawerContent>
+    </Drawer>
+  ) : (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Enter Checkout Info</DialogTitle>
         </DialogHeader>
-        <div className="overflow-y-auto max-h-[calc(90vh-100px)] p-1">
+        <div className="overflow-y-auto max-h-[60vh]">
           {FormContent}
         </div>
         <DialogClose className="sr-only" />
