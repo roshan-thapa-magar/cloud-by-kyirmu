@@ -17,31 +17,60 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
 export const metadata: Metadata = {
-  title: "Cloud by KYIRMU | Cafe & Organic Hub",
-  description: "Enjoy fresh coffee, organic foods, and a healthy lifestyle experience.",
+  title: {
+    default: "Cloud by KYIRMU | Cafe & Organic Hub",
+    template: "%s | Cloud by KYIRMU"
+  },
+  description: "Enjoy fresh coffee, organic foods, and a healthy lifestyle experience. Visit our cafe for premium organic products and specialty coffee.",
+  keywords: ["cafe", "organic food", "coffee shop", "healthy lifestyle", "organic hub", "fresh coffee", "KYIRMU", "organic products"],
   authors: [{ name: "Cloud by KYIRMU", url: "https://cloud-by-kyirmu.vercel.app" }],
+  creator: "Cloud by KYIRMU",
+  publisher: "Cloud by KYIRMU",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   openGraph: {
-    title: "Cloud by KYIRMU | Cafe & Organic Hub",
-    description: "Enjoy fresh coffee, organic foods, and a healthy lifestyle experience.",
+    title: "Cloud by KYIRMU | Premium Cafe & Organic Hub",
+    description: "Experience the perfect blend of fresh coffee and organic foods. Your destination for healthy lifestyle choices.",
     url: "https://cloud-by-kyirmu.vercel.app",
     siteName: "Cloud by KYIRMU",
+    locale: "en_US",
+    type: "website",
     images: [
       {
-        url: "https://cloud-by-kyirmu.vercel.app/og-image1.png", // Must be correct
+        url: "https://cloud-by-kyirmu.vercel.app/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Cloud by KYIRMU - Cafe & Organic Hub",
+        alt: "Cloud by KYIRMU - Premium Cafe & Organic Hub",
+        type: "image/jpeg",
       },
     ],
-    type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Cloud by KYIRMU | Cafe & Organic Hub",
-    description: "Enjoy fresh coffee, organic foods, and a healthy lifestyle experience.",
-    images: ["https://cloud-by-kyirmu.vercel.app/og-image1.png"],
+    title: "Cloud by KYIRMU | Premium Cafe & Organic Hub",
+    description: "Experience the perfect blend of fresh coffee and organic foods. Your destination for healthy lifestyle choices.",
+    images: ["https://cloud-by-kyirmu.vercel.app/og-image.jpg"],
+    creator: "@cloudbykyirmu",
+    site: "@cloudbykyirmu",
   },
+  alternates: {
+    canonical: "https://cloud-by-kyirmu.vercel.app",
+  },
+  verification: {
+    google: "your-google-site-verification-code", // Add your Google Search Console verification code here
+  },
+  category: "food & beverage",
 };
 
 export default function RootLayout({
