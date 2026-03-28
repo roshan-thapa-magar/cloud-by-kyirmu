@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
   Dialog,
@@ -25,9 +25,11 @@ import { useUser } from "@/context/UserContext"
 import { Loader2 } from "lucide-react";
 import GoogleMapComponent from "@/components/google-map-component";
 
+
 interface CheckoutProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // Return true if successful, false otherwise
   orderLoading?: boolean;
   onSubmit: (
     phone: string,
@@ -42,41 +44,16 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [phone, setPhone] = useState(user?.phone || "");
   const [address, setAddress] = useState(user?.address || "");
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(""); // <- note state
   const [isMobile, setIsMobile] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
 
+  // Detect mobile screens
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // Handle body scroll and viewport issues
-  useEffect(() => {
-    if (open && isMobile) {
-      const originalStyle = window.getComputedStyle(document.body).overflow;
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      
-      return () => {
-        document.body.style.overflow = originalStyle;
-        document.body.style.position = '';
-        document.body.style.width = '';
-      };
-    }
-  }, [open, isMobile]);
-
-  // Scroll to top when drawer opens
-  useEffect(() => {
-    if (open && contentRef.current) {
-      setTimeout(() => {
-        contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
-    }
-  }, [open]);
 
   const handleSubmit = async () => {
     if (!phone || !address) return toast.error("Phone and address required");
@@ -85,13 +62,12 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
 
     if (success) {
       onOpenChange(false);
-      setPhone(""); 
-      setAddress(""); 
-      setNote(""); 
-      setPaymentMethod("cash");
+      setPhone(""); setAddress(""); setNote(""); setPaymentMethod("cash");
     }
   };
 
+
+  // Payment options
   const paymentOptions = [
     { value: "cash", label: "Cash" },
     { value: "card", label: "Card" },
@@ -103,13 +79,9 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
       <GoogleMapComponent
         onLocationSelect={(addr) => setAddress(addr)}
         initialAddress={address}
-        containerStyle={{ 
-          width: "100%", 
-          height: isMobile ? "150px" : "200px", 
-          borderRadius: 12 
-        }}
+        containerStyle={{ width: "100%", height: "200px", borderRadius: 12 }}
       />
-      
+      {/* Phone Number */}
       <div>
         <label className="text-sm">Phone Number</label>
         <Input
@@ -119,7 +91,6 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
           onChange={(e) => setPhone(e.target.value)}
         />
       </div>
-      
       <div>
         <label className="text-sm">Note (optional)</label>
         <Textarea
@@ -129,7 +100,7 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
           rows={3}
         />
       </div>
-      
+      {/* Payment Method */}
       <div>
         <label className="text-sm mb-2 block">Payment Method</label>
         <RadioGroup
@@ -145,15 +116,14 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
               </label>
             </div>
           ))}
+
         </RadioGroup>
       </div>
 
+
+      {/* Submit */}
       <Button className="w-full" disabled={orderLoading} onClick={handleSubmit}>
-        {orderLoading ? (
-          <div className="flex items-center gap-2">
-            <Loader2 className="animate-spin mr-2" /> Submitting...
-          </div>
-        ) : "Submit"}
+        {orderLoading ? <div className="flex items-center gap-2"><Loader2 className="animate-spin mr-2" /> Submiting...</div> : "Submit"}
       </Button>
     </div>
   );
@@ -165,15 +135,7 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
           <DrawerTitle>Enter Checkout Info</DrawerTitle>
           <DrawerClose />
         </DrawerHeader>
-        <div 
-          ref={contentRef}
-          className="overflow-y-auto"
-          style={{
-            maxHeight: 'calc(80vh - 80px)',
-            WebkitOverflowScrolling: 'touch',
-            overscrollBehavior: 'contain',
-          }}
-        >
+        <div className="overflow-y-auto">
           {FormContent}
         </div>
       </DrawerContent>
