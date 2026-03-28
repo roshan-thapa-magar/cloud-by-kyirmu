@@ -31,7 +31,7 @@ interface ProfileData {
 
 export function PersonalInformation() {
   const { data: session } = useSession();
-  const { user, fetchUser, updateUser, loading } = useUser();
+  const { user, fetchUser, updateUser, updateUserImage, loading } = useUser();
   const userId = session?.user?._id;
 
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -43,6 +43,8 @@ export function PersonalInformation() {
     address: "",
     profileImage: "",
   });
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch user when userId becomes available
   useEffect(() => {
@@ -70,28 +72,91 @@ export function PersonalInformation() {
     }
   }, [user]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
+    if (!file || !userId) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB");
+      return;
+    }
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setProfileData((prev) => ({
+        ...prev,
+        profileImage: e.target?.result as string,
+      }));
+    };
+    reader.readAsDataURL(file);
+
+    // Upload image to server
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      // Convert to base64 for the API
+      const base64Image = await new Promise<string>((resolve, reject) => {
+        const fileReader = new FileReader();
+        fileReader.onload = () => resolve(fileReader.result as string);
+        fileReader.onerror = reject;
+        fileReader.readAsDataURL(file);
+      });
+
+      const result = await updateUserImage(userId, base64Image);
+      
+      if (result.success) {
+        toast.success("Profile picture updated successfully");
+        // Update the profile image with the Cloudinary URL
+        if (result.image) {
+          setProfileData((prev) => ({
+            ...prev,
+            profileImage: result.image!,
+          }));
+        }
+      } else {
+        toast.error(result.message || "Failed to update profile picture");
+        // Revert to previous image if upload failed
         setProfileData((prev) => ({
           ...prev,
-          profileImage: e.target?.result as string,
+          profileImage: user?.image || "https://res.cloudinary.com/dzbtzumsd/image/upload/v1758364107/users/ew23jqr9zvvjmsiialpk.jpg",
         }));
-      };
-      reader.readAsDataURL(file);
+      }
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast.error("Failed to update profile picture");
+      // Revert to previous image
+      setProfileData((prev) => ({
+        ...prev,
+        profileImage: user?.image || "https://res.cloudinary.com/dzbtzumsd/image/upload/v1758364107/users/ew23jqr9zvvjmsiialpk.jpg",
+      }));
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!userId) return toast.error("User not loaded yet");
+    if (!userId) {
+      toast.error("User not loaded yet");
+      return;
+    }
 
+    setIsSaving(true);
+    
+    // Only update text fields (name, address, phone)
+    // Image is already uploaded separately via handleImageUpload
     const { success, message } = await updateUser(userId, {
       name: profileData.name,
-      image: profileData.profileImage,
       address: profileData.address,
       phone: profileData.contactNumber,
     });
@@ -101,6 +166,8 @@ export function PersonalInformation() {
     } else {
       toast.error(message || "Failed to update profile");
     }
+    
+    setIsSaving(false);
   };
 
   return (
@@ -115,28 +182,36 @@ export function PersonalInformation() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Avatar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
-              <AvatarImage src={profileData.profileImage} alt="Profile" />
-              <AvatarFallback>
-                {profileData.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
+                <AvatarImage src={profileData.profileImage} alt="Profile" />
+                <AvatarFallback>
+                  {profileData.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+              {isUploadingImage && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                  <Loader2 className="h-6 w-6 text-white animate-spin" />
+                </div>
+              )}
+            </div>
             <div className="w-full sm:w-auto">
               <Label htmlFor="profile-image" className="cursor-pointer">
                 <div className="flex items-center justify-center sm:justify-start space-x-2 bg-secondary hover:bg-secondary/80 px-4 py-2 rounded-md transition-colors">
                   <Camera className="h-4 w-4" />
-                  <span>Change Photo</span>
+                  <span>{isUploadingImage ? "Uploading..." : "Change Photo"}</span>
                 </div>
               </Label>
               <Input
                 id="profile-image"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/jpg,image/webp"
                 className="hidden"
                 onChange={handleImageUpload}
+                disabled={isUploadingImage}
               />
               <p className="text-sm text-muted-foreground mt-1 text-center sm:text-left">
                 JPG, PNG or GIF. Max size 5MB.
@@ -155,6 +230,7 @@ export function PersonalInformation() {
                   setProfileData((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder="Enter your full name"
+                disabled={isSaving || isUploadingImage}
               />
             </div>
 
@@ -181,6 +257,7 @@ export function PersonalInformation() {
                   }))
                 }
                 placeholder="Enter your contact number"
+                disabled={isSaving || isUploadingImage}
               />
             </div>
 
@@ -207,13 +284,24 @@ export function PersonalInformation() {
             initialAddress={profileData.address}
             containerStyle={{ width: "100%", height: "400px", borderRadius: 12 }}
           />
+          
           {/* Submit */}
-          <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
-            <Save className="h-4 w-4 mr-2" />
-            {loading ? <span className="flex items-center gap-2">
-              Saving
-              <Loader2 className="h-4 w-4 animate-spin" />
-            </span> : "Save Personal Information"}
+          <Button 
+            type="submit" 
+            className="w-full sm:w-auto" 
+            disabled={isSaving || isUploadingImage || loading}
+          >
+            {isSaving ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving...
+              </span>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save Personal Information
+              </>
+            )}
           </Button>
         </form>
       </CardContent>

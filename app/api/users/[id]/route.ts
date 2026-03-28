@@ -55,27 +55,36 @@ export async function PUT(
   try {
     const { id } = await context.params;
 
+    // ✅ Validate ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ message: "Invalid user ID" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Invalid user ID" },
+        { status: 400 }
+      );
     }
 
     await connectMongoDB();
 
     const body = await request.json();
-    const { name, image, phone, address } = body;
+    const { name, phone, address } = body;
 
     const user = await User.findById(id);
     if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
+      return NextResponse.json(
+        { message: "User not found" },
+        { status: 404 }
+      );
     }
 
-    // Handle phone formatting
+    // ✅ Format phone (Nepal format)
     let formattedPhone = phone;
-    if (phone && !phone.startsWith("+977")) {
-      formattedPhone = "+977" + phone.replace(/^0/, "");
+    if (phone) {
+      formattedPhone = phone.startsWith("+977")
+        ? phone
+        : "+977" + phone.replace(/^0/, "");
     }
 
-    // Update user fields immediately
+    // ✅ Update only basic fields
     const updatedUser = await User.findByIdAndUpdate(
       id,
       {
@@ -83,65 +92,33 @@ export async function PUT(
         ...(formattedPhone && { phone: formattedPhone }),
         ...(address && { address }),
       },
-      { new: true, runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     ).select("-password");
 
-    // Trigger Pusher event for user update
+    // ✅ Trigger Pusher event
     try {
-      await pusherServer.trigger('users', 'user-updated', updatedUser);
+      await pusherServer.trigger("users", "user-updated", updatedUser);
     } catch (err) {
       console.error("Failed to trigger user update event:", err);
     }
 
-    // Background image update
-    if (image && image.startsWith("data:image")) {
-      (async () => {
-        try {
-          // Delete old image
-          if (user.image) {
-            const segments = user.image.split("/");
-            const filename = segments[segments.length - 1].split(".")[0];
-            const folder = "users";
-            await cloudinary.uploader.destroy(`${folder}/${filename}`);
-          }
-
-          // Upload new image
-          const uploadedImage = await cloudinary.uploader.upload(image, {
-            folder: "users",
-            public_id: id,
-            overwrite: true,
-            quality: "auto",
-          });
-
-          const finalUpdatedUser = await User.findByIdAndUpdate(
-            id, 
-            { image: uploadedImage.secure_url },
-            { new: true }
-          ).select("-password");
-
-          // Trigger Pusher event for image update
-          try {
-            await pusherServer.trigger('users', 'user-image-updated', {
-              _id: id,
-              image: uploadedImage.secure_url,
-              user: finalUpdatedUser
-            });
-          } catch (err) {
-            console.error("Failed to trigger image update event:", err);
-          }
-        } catch (err) {
-          console.error("Background user image upload failed:", err);
-        }
-      })();
-    }
-
-    return NextResponse.json({
-      message: "User updated successfully",
-      user: updatedUser,
-    }, { status: 200 });
+    return NextResponse.json(
+      {
+        message: "User updated successfully",
+        user: updatedUser,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("PUT USER ERROR:", error);
-    return NextResponse.json({ message: "Server Error" }, { status: 500 });
+
+    return NextResponse.json(
+      { message: "Server Error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -249,5 +226,97 @@ export async function DELETE(
   } catch (error) {
     console.error("DELETE USER ERROR:", error);
     return NextResponse.json({ success: false, message: "Server error", error: String(error) }, { status: 500 });
+  }
+}
+
+
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+
+    // ✅ Validate ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { message: "Invalid user ID" },
+        { status: 400 }
+      );
+    }
+
+    await connectMongoDB();
+
+    const { image } = await request.json();
+
+    if (!image || !image.startsWith("data:image")) {
+      return NextResponse.json(
+        { message: "Invalid image format" },
+        { status: 400 }
+      );
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return NextResponse.json(
+        { message: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // ✅ Delete old image (if exists)
+    if (user.image) {
+      try {
+        const segments = user.image.split("/");
+        const filename = segments[segments.length - 1].split(".")[0];
+        const folder = "users";
+
+        await cloudinary.uploader.destroy(`${folder}/${filename}`);
+      } catch (err) {
+        console.warn("Old image deletion failed:", err);
+      }
+    }
+
+    // ✅ Upload new image
+    const uploadedImage = await cloudinary.uploader.upload(image, {
+      folder: "users",
+      public_id: id, // overwrite same image
+      overwrite: true,
+      quality: "auto",
+    });
+
+    // ✅ Update DB
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { image: uploadedImage.secure_url },
+      { new: true }
+    ).select("-password");
+
+    // ✅ Trigger Pusher event
+    try {
+      await pusherServer.trigger("users", "user-image-updated", {
+        _id: id,
+        image: uploadedImage.secure_url,
+        user: updatedUser,
+      });
+    } catch (err) {
+      console.error("Pusher trigger failed:", err);
+    }
+
+    return NextResponse.json(
+      {
+        message: "User image updated successfully",
+        image: uploadedImage.secure_url,
+        user: updatedUser,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("PATCH USER IMAGE ERROR:", error);
+
+    return NextResponse.json(
+      { message: "Server Error" },
+      { status: 500 }
+    );
   }
 }

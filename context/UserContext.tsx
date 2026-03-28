@@ -34,6 +34,13 @@ interface UpdateUserResponse {
   user?: User;
 }
 
+interface UpdateImageResponse {
+  success: boolean;
+  message?: string;
+  image?: string;
+  user?: User;
+}
+
 interface DeleteUserResponse {
   success: boolean;
   message?: string;
@@ -45,8 +52,9 @@ interface UserContextType {
   fetchUser: (id: string) => Promise<FetchUserResponse>;
   updateUser: (
     id: string,
-    data: { name?: string; image?: string; phone?: string; address?: string }
+    data: { name?: string; phone?: string; address?: string }
   ) => Promise<UpdateUserResponse>;
+  updateUserImage: (id: string, imageBase64: string) => Promise<UpdateImageResponse>;
   deleteUser: (id: string) => Promise<DeleteUserResponse>;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
@@ -90,11 +98,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ---- UPDATE USER ----
+  // ---- UPDATE USER (Text fields only) ----
   const updateUser = useCallback(
     async (
       id: string,
-      updateData: { name?: string; image?: string; phone?: string; address?: string }
+      updateData: { name?: string; phone?: string; address?: string }
     ): Promise<UpdateUserResponse> => {
       try {
         setLoading(true);
@@ -116,6 +124,46 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
 
         return { success: true, message: data.message, user: data.user };
+      } catch (error) {
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : String(error),
+        };
+      } finally {
+        if (isMounted.current) setLoading(false);
+      }
+    },
+    []
+  );
+
+  // ---- UPDATE USER IMAGE (Separate function for image upload) ----
+  const updateUserImage = useCallback(
+    async (id: string, imageBase64: string): Promise<UpdateImageResponse> => {
+      try {
+        setLoading(true);
+
+        const res = await fetch(`/api/users/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: imageBase64 }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          return { success: false, message: data.message };
+        }
+
+        if (isMounted.current) {
+          setUser(data.user);
+        }
+
+        return {
+          success: true,
+          message: data.message,
+          image: data.image,
+          user: data.user,
+        };
       } catch (error) {
         return {
           success: false,
@@ -206,6 +254,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         loading,
         fetchUser,
         updateUser,
+        updateUserImage,
         deleteUser,
         setUser,
       }}
