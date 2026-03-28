@@ -135,7 +135,7 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
           <DrawerTitle>Enter Checkout Info</DrawerTitle>
           <DrawerClose />
         </DrawerHeader>
-        <div className="overflow-y-auto">
+        <div className="overflow-y-auto hide-scrollbar">
           {FormContent}
         </div>
       </DrawerContent>
@@ -146,7 +146,7 @@ const Checkout: React.FC<CheckoutProps> = ({ open, onOpenChange, onSubmit, order
         <DialogHeader>
           <DialogTitle>Enter Checkout Info</DialogTitle>
         </DialogHeader>
-        <div className="overflow-y-auto max-h-[60vh]">
+        <div className="overflow-y-auto max-h-[80vh] hide-scrollbar">
           {FormContent}
         </div>
         <DialogClose className="sr-only" />
