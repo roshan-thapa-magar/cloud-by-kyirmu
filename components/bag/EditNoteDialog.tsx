@@ -69,6 +69,7 @@ const EditNoteDialog = ({
         className="w-full min-h-[100px] border rounded-md p-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
         rows={4}
         autoFocus
+        style={{ fontSize: "16px" }}
       />
 
       <div className="flex gap-2">
