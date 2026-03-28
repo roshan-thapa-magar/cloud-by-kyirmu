@@ -28,7 +28,7 @@ const MobileMenu = () => {
 
   const handleLogout = () => {
     setOpen(false)
-    signOut()
+    signOut({ callbackUrl: "/" })
   }
 
   const handleLogIn = () => {

@@ -64,7 +64,7 @@ const UserAvatar = () => {
         {/* Logout */}
         <DropdownMenuItem
           className="text-red-500 focus:text-red-500 cursor-pointer"
-          onClick={() => signOut()}
+          onClick={() => signOut({ callbackUrl: "/" })}
         >
           Logout
         </DropdownMenuItem>
