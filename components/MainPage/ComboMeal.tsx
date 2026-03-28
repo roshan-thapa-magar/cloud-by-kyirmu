@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import ComboItem from "../ComboItem";
 import { getItems } from "@/services/items.api";
-import { ComboSkeleton } from "@/components/skeleton/ComboSkeleton";
+import { ComboSkeleton } from "@/components/skeleton/ComboSkeleton1";
 import { getPusherClient } from '@/lib/pusher-client';
 import { toast } from "sonner";
 import { Loader } from "lucide-react";
