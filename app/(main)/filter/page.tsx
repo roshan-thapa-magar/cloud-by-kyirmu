@@ -17,16 +17,23 @@ export default function FilterPage() {
   const [minPrice, setMinPrice] = useState<number | "">("")
   const [maxPrice, setMaxPrice] = useState<number | "">("")
   const [selectedCid, setSelectedCid] = useState<string[]>([])
-  
+
   // Pagination states
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
-  
+
   // Ref to track if we need to refresh
   const needRefreshRef = useRef(false);
+  // Ref to store current items for duplicate checking in Pusher events
+  const itemsRef = useRef(items);
+
+  // Update ref when items change
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   /* ---------------- INITIALIZE FROM URL ---------------- */
   useEffect(() => {
@@ -49,32 +56,41 @@ export default function FilterPage() {
         setLoadingMore(true);
       }
 
-      const params: any = { 
+      const params: any = {
         sort,
         page: pageNum,
         limit: 8 // Fetch 8 items per page
       }
-      
+
       if (minPrice !== "") params.minPrice = minPrice
       if (maxPrice !== "") params.maxPrice = maxPrice
       if (selectedCid.length > 0) params.cid = selectedCid.join(",")
 
       const data = await getItems(params)
-      
+      console.log(data.items)
+
       if (isInitial) {
         setItems(data.items)
       } else {
-        setItems(prev => [...prev, ...data.items])
+        setItems(prev => {
+          // Create a Map to ensure uniqueness by _id
+          const itemsMap = new Map();
+          // Add existing items
+          prev.forEach(item => itemsMap.set(item._id, item));
+          // Add new items (will overwrite duplicates)
+          data.items.forEach(item => itemsMap.set(item._id, item));
+          return Array.from(itemsMap.values());
+        });
       }
 
       // Update pagination info
       const total = data.pagination?.total || 0
       const currentPage = data.pagination?.page || pageNum
       const totalPages = data.pagination?.totalPages || 0
-      
+
       setTotalItems(total)
       setHasMore(currentPage < totalPages)
-      
+
     } catch (error) {
       console.error("Failed to fetch combo items", error)
       toast.error("Failed to load items")
@@ -119,58 +135,64 @@ export default function FilterPage() {
 
     // Handle new item creation
     const handleItemCreated = (newItem: any) => {
-      // Only refresh if on first page and filters match
-      if (page === 1) {
-        // Check if the new item matches current filters
-        let shouldRefresh = true;
-        
-        // Check price filter
-        if (minPrice !== "" && newItem.price < minPrice) shouldRefresh = false;
-        if (maxPrice !== "" && newItem.price > maxPrice) shouldRefresh = false;
-        
-        // Check category filter
-        if (selectedCid.length > 0) {
-          // You might need to check if item's category matches selected categories
-          // This depends on your data structure
-          shouldRefresh = false; // Implement your category matching logic
-        }
-        
-        if (shouldRefresh) {
-          setPage(1);
-          setItems([]);
-          setHasMore(true);
-          fetchComboItems(1, true);
-          toast.success(`New item added: ${newItem.itemName}`);
-        } else {
-          // Item doesn't match current filters, just update total count
-          setTotalItems(prev => prev + 1);
-        }
-      } else {
-        // Mark that we need to refresh when user goes back to first page
-        needRefreshRef.current = true;
-        setTotalItems(prev => prev + 1);
+      // Check if item already exists in current list
+      const itemExists = itemsRef.current.some(item => item._id === newItem._id);
+      
+      if (itemExists) {
+        console.warn('Item already exists, skipping duplicate addition:', newItem._id);
+        return;
       }
-    };
 
+      setTotalItems((prev) => prev + 1);
+
+      // check filters (important so UI stays correct)
+      const matchPrice =
+        (minPrice === "" || newItem.price >= minPrice) &&
+        (maxPrice === "" || newItem.price <= maxPrice);
+
+      const matchCategory =
+        selectedCid.length === 0 || selectedCid.includes(newItem.cid);
+
+      const matchesCurrentView = matchPrice && matchCategory;
+
+      if (!matchesCurrentView) return;
+
+      // ✅ Add item to TOP (newest first) - ensure uniqueness
+      setItems((prev) => {
+        // Double-check for duplicates before adding
+        if (prev.some(item => item._id === newItem._id)) {
+          return prev;
+        }
+        return [newItem, ...prev];
+      });
+
+      toast.success(`New item added: ${newItem.itemName}`);
+    };
+    
     // Handle item update
     const handleItemUpdated = (updatedItem: any) => {
-      setItems(prev => 
-        prev.map(item => 
-          item._id === updatedItem._id 
+      setItems(prev =>
+        prev.map(item =>
+          item._id === updatedItem._id
             ? { ...updatedItem }
             : item
         )
       );
-      
+
       // Check if item matches current filters and refresh if needed
       let shouldRefresh = false;
       if (minPrice !== "" && updatedItem.price < minPrice) shouldRefresh = true;
       if (maxPrice !== "" && updatedItem.price > maxPrice) shouldRefresh = true;
       
+      // Check if category filter is affected
+      if (selectedCid.length > 0 && !selectedCid.includes(updatedItem.cid)) {
+        shouldRefresh = true;
+      }
+
       if (shouldRefresh && page === 1) {
         fetchComboItems(1, true);
       }
-      
+
       toast.info(`Item updated: ${updatedItem.itemName}`);
     };
 
@@ -186,16 +208,20 @@ export default function FilterPage() {
 
     // Handle item deletion
     const handleItemDeleted = ({ _id }: { _id: string }) => {
-      setItems(prev => prev.filter(item => item._id !== _id));
+      setItems(prev => {
+        const newItems = prev.filter(item => item._id !== _id);
+        
+        // If current page becomes empty and not first page, go to previous page
+        if (newItems.length === 0 && page > 1) {
+          setPage(page - 1);
+        } else if (page === 1 && prev.length === 1) {
+          fetchComboItems(1, true);
+        }
+        
+        return newItems;
+      });
       setTotalItems(prev => prev - 1);
-      
-      // If current page becomes empty and not first page, go to previous page
-      if (items.length === 1 && page > 1) {
-        setPage(page - 1);
-      } else if (page === 1 && items.length === 1) {
-        fetchComboItems(1, true);
-      }
-      
+
       toast.info("Item has been deleted");
     };
 
@@ -213,7 +239,7 @@ export default function FilterPage() {
       channel.unbind('item-deleted', handleItemDeleted);
       pusher.unsubscribe('items');
     };
-  }, [page, minPrice, maxPrice, selectedCid, fetchComboItems, items.length]);
+  }, [minPrice, maxPrice, selectedCid, fetchComboItems, page]);
 
   // Effect to refresh when coming back to first page after updates
   useEffect(() => {
