@@ -31,7 +31,7 @@ interface ProfileData {
 
 export function PersonalInformation() {
   const { data: session } = useSession();
-  const { user, fetchUser, updateUser, updateUserImage, loading } = useUser();
+  const { user, fetchUser, updateUser, updateUserImage, loading, isUploadingImage: globalIsUploadingImage } = useUser();
   const userId = session?.user?._id;
 
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -43,8 +43,11 @@ export function PersonalInformation() {
     address: "",
     profileImage: "",
   });
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [localImageUploading, setLocalImageUploading] = useState(false);
+
+  // Use global uploading state or local state
+  const isUploadingImage = globalIsUploadingImage || localImageUploading;
 
   // Fetch user when userId becomes available
   useEffect(() => {
@@ -98,12 +101,10 @@ export function PersonalInformation() {
     };
     reader.readAsDataURL(file);
 
-    // Upload image to server
-    setIsUploadingImage(true);
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
+    // Set local uploading state
+    setLocalImageUploading(true);
 
+    try {
       // Convert to base64 for the API
       const base64Image = await new Promise<string>((resolve, reject) => {
         const fileReader = new FileReader();
@@ -115,7 +116,7 @@ export function PersonalInformation() {
       const result = await updateUserImage(userId, base64Image);
       
       if (result.success) {
-        toast.success("Profile picture updated successfully");
+        // toast.success("Profile picture updated successfully");
         // Update the profile image with the Cloudinary URL
         if (result.image) {
           setProfileData((prev) => ({
@@ -140,7 +141,7 @@ export function PersonalInformation() {
         profileImage: user?.image || "https://res.cloudinary.com/dzbtzumsd/image/upload/v1758364107/users/ew23jqr9zvvjmsiialpk.jpg",
       }));
     } finally {
-      setIsUploadingImage(false);
+      setLocalImageUploading(false);
     }
   };
 
@@ -153,22 +154,32 @@ export function PersonalInformation() {
 
     setIsSaving(true);
     
-    // Only update text fields (name, address, phone)
-    // Image is already uploaded separately via handleImageUpload
-    const { success, message } = await updateUser(userId, {
-      name: profileData.name,
-      address: profileData.address,
-      phone: profileData.contactNumber,
-    });
+    try {
+      // Only update text fields (name, address, phone)
+      // This runs independently from image upload
+      const { success, message } = await updateUser(userId, {
+        name: profileData.name,
+        address: profileData.address,
+        phone: profileData.contactNumber,
+      });
 
-    if (success) {
-      toast.success(message || "Profile updated successfully!");
-    } else {
-      toast.error(message || "Failed to update profile");
+      if (success) {
+        toast.success(message || "Profile updated successfully!");
+      } else {
+        toast.error(message || "Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error("Failed to update profile");
+    } finally {
+      setIsSaving(false);
     }
-    
-    setIsSaving(false);
   };
+
+  // Form fields should only be disabled if they are being saved
+  // Image upload should NOT disable form fields
+  const isFormDisabled = isSaving;
+  const isSubmitDisabled = isSaving; // Image upload doesn't block submit
 
   return (
     <Card>
@@ -219,7 +230,7 @@ export function PersonalInformation() {
             </div>
           </div>
 
-          {/* Form Fields */}
+          {/* Form Fields - Not disabled during image upload */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -230,7 +241,7 @@ export function PersonalInformation() {
                   setProfileData((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder="Enter your full name"
-                disabled={isSaving || isUploadingImage}
+                disabled={isFormDisabled}
               />
             </div>
 
@@ -257,7 +268,7 @@ export function PersonalInformation() {
                   }))
                 }
                 placeholder="Enter your contact number"
-                disabled={isSaving || isUploadingImage}
+                disabled={isFormDisabled}
               />
             </div>
 
@@ -276,7 +287,7 @@ export function PersonalInformation() {
             </div>
           </div>
 
-          {/* Personal Address with Map */}
+          {/* Personal Address with Map - Not disabled during image upload */}
           <GoogleMapComponent
             onLocationSelect={(addr) =>
               setProfileData((prev) => ({ ...prev, address: addr }))
@@ -285,11 +296,11 @@ export function PersonalInformation() {
             containerStyle={{ width: "100%", height: "400px", borderRadius: 12 }}
           />
           
-          {/* Submit */}
+          {/* Submit Button - Only disabled during save, not during image upload */}
           <Button 
             type="submit" 
             className="w-full sm:w-auto" 
-            disabled={isSaving || isUploadingImage || loading}
+            disabled={isSubmitDisabled}
           >
             {isSaving ? (
               <span className="flex items-center gap-2">
@@ -303,6 +314,23 @@ export function PersonalInformation() {
               </>
             )}
           </Button>
+
+          {/* Optional: Show status messages */}
+          {isUploadingImage && !isSaving && (
+            <p className="text-sm text-blue-600 mt-2">
+              Uploading profile picture... You can continue editing other fields.
+            </p>
+          )}
+          {isSaving && !isUploadingImage && (
+            <p className="text-sm text-blue-600 mt-2">
+              Saving your changes...
+            </p>
+          )}
+          {isUploadingImage && isSaving && (
+            <p className="text-sm text-blue-600 mt-2">
+              Uploading profile picture and saving changes...
+            </p>
+          )}
         </form>
       </CardContent>
     </Card>

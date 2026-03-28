@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 
 export default function AccountDetails() {
   const { data: session } = useSession();
-  const { user, fetchUser, updateUser, updateUserImage, loading, deleteUser } = useUser();
+  const { user, fetchUser, updateUser, updateUserImage, loading, isUploadingImage, deleteUser } = useUser();
   const userId = session?.user?._id;
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
@@ -21,7 +21,7 @@ export default function AccountDetails() {
   const [contactNumber, setContactNumber] = useState("");
   const [profileImage, setProfileImage] = useState<string | undefined>();
   const [hovering, setHovering] = useState(false);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUpdatingDetails, setIsUpdatingDetails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -44,6 +44,8 @@ export default function AccountDetails() {
   const handleUpdate = async () => {
     if (!userId) return;
     
+    setIsUpdatingDetails(true);
+    
     // Only update name and phone (text fields)
     const result = await updateUser(userId, { 
       name: fullName, 
@@ -55,6 +57,8 @@ export default function AccountDetails() {
     } else {
       toast.error(result.message || "Failed to update profile");
     }
+    
+    setIsUpdatingDetails(false);
   };
 
   const handleDelete = async () => {
@@ -98,30 +102,24 @@ export default function AccountDetails() {
       // Update local state immediately for better UX
       setProfileImage(base64Image);
       
-      // Upload to server
-      setIsUploadingImage(true);
-      try {
-        const result = await updateUserImage(userId, base64Image);
-        
-        if (result.success) {
-          toast.success("Profile picture updated successfully");
-        } else {
-          toast.error(result.message || "Failed to update profile picture");
-          // Revert local state if upload failed
-          setProfileImage(user?.image);
+      // Upload to server (this runs independently)
+      const result = await updateUserImage(userId, base64Image);
+      
+      if (result.success) {
+        // toast.success("Profile picture updated successfully");
+        // Update with the Cloudinary URL if needed
+        if (result.image) {
+          setProfileImage(result.image);
         }
-      } catch (error) {
-        console.error("Image upload error:", error);
-        toast.error("Failed to update profile picture");
+      } else {
+        toast.error(result.message || "Failed to update profile picture");
+        // Revert local state if upload failed
         setProfileImage(user?.image);
-      } finally {
-        setIsUploadingImage(false);
       }
     };
     
     reader.onerror = () => {
       toast.error("Failed to read image file");
-      setIsUploadingImage(false);
     };
     
     reader.readAsDataURL(file);
@@ -132,6 +130,9 @@ export default function AccountDetails() {
       fileInputRef.current?.click();
     }
   };
+
+  // Check if any operation is in progress
+  const isAnyLoading = loading || isUploadingImage || isUpdatingDetails;
 
   return (
     <>
@@ -205,7 +206,7 @@ export default function AccountDetails() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Enter your full name"
-              disabled={loading}
+              disabled={isUpdatingDetails}
             />
           </div>
 
@@ -220,7 +221,7 @@ export default function AccountDetails() {
               value={contactNumber}
               onChange={(e) => setContactNumber(e.target.value)}
               placeholder="Enter your contact number"
-              disabled={loading}
+              disabled={isUpdatingDetails}
             />
           </div>
 
@@ -244,9 +245,9 @@ export default function AccountDetails() {
             variant="default" 
             className="w-full cursor-pointer" 
             onClick={handleUpdate} 
-            disabled={loading || isUploadingImage}
+            disabled={isUpdatingDetails }
           >
-            {loading ? (
+            {isUpdatingDetails ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Saving...
@@ -260,7 +261,7 @@ export default function AccountDetails() {
           <Button 
             variant="destructive" 
             onClick={() => setIsDeleteOpen(true)}
-            disabled={loading || isUploadingImage}
+            disabled={isAnyLoading}
             className="w-full md:w-auto"
           >
             Remove My Account

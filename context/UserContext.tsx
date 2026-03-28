@@ -49,6 +49,7 @@ interface DeleteUserResponse {
 interface UserContextType {
   user: User | null;
   loading: boolean;
+  isUploadingImage: boolean;
   fetchUser: (id: string) => Promise<FetchUserResponse>;
   updateUser: (
     id: string,
@@ -66,6 +67,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const isMounted = useRef(true);
 
   // ---- FETCH USER ----
@@ -80,7 +82,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         return { success: false, message: data.message };
       }
 
-      // ✅ FIX: correct response
       const userData = data.user || data;
 
       if (isMounted.current) {
@@ -140,7 +141,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const updateUserImage = useCallback(
     async (id: string, imageBase64: string): Promise<UpdateImageResponse> => {
       try {
-        setLoading(true);
+        setIsUploadingImage(true);
 
         const res = await fetch(`/api/users/${id}`, {
           method: "PATCH",
@@ -170,7 +171,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           message: error instanceof Error ? error.message : String(error),
         };
       } finally {
-        if (isMounted.current) setLoading(false);
+        if (isMounted.current) setIsUploadingImage(false);
       }
     },
     []
@@ -206,7 +207,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ---- PUSHER (SAFE VERSION) ----
+  // ---- PUSHER ----
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -231,7 +232,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       setUser((prev) => (prev?._id === _id ? null : prev));
     };
 
-    // Bind events
     channel.bind("user-updated", handleUserUpdated);
     channel.bind("user-image-updated", handleUserImageUpdated);
     channel.bind("user-deleted", handleUserDeleted);
@@ -252,6 +252,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         loading,
+        isUploadingImage,
         fetchUser,
         updateUser,
         updateUserImage,
