@@ -555,7 +555,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
             {step === 0 ? 'Sign in with email or continue with Google' : step === 1 ? `We've sent a 6-digit code to ${email}` : 'Tell us a bit about yourself'}
           </DrawerDescription>
         </DrawerHeader>
-        <div className="overflow-y-auto max-h-[80vh]">{FormContent()}</div>
+        <div className="overflow-y-auto max-h-[80vh] my-8">{FormContent()}</div>
       </DrawerContent>
     </Drawer>
   )

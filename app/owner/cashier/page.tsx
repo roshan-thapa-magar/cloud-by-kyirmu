@@ -84,7 +84,7 @@ export default function ActiveOrdersPage() {
     fetchOrders();
 
     const pusher = getPusherClient();
-    
+
     // Subscribe to admin orders channel
     const channel = pusher.subscribe('admin-orders');
 
@@ -124,6 +124,8 @@ export default function ActiveOrdersPage() {
     channel.bind('order-updated', handleOrderUpdate);
     channel.bind('order-deleted', handleOrderDelete);
     channel.bind('order-status-updated', handleStatusUpdate);
+    channel.bind('user-deleted', handleStatusUpdate);
+
 
     // Cleanup
     return () => {
@@ -131,6 +133,7 @@ export default function ActiveOrdersPage() {
       channel.unbind('order-updated', handleOrderUpdate);
       channel.unbind('order-deleted', handleOrderDelete);
       channel.unbind('order-status-updated', handleStatusUpdate);
+      channel.unbind('user-deleted', handleStatusUpdate);
       pusher.unsubscribe('admin-orders');
     };
   }, [fetchOrders]);
@@ -159,9 +162,9 @@ export default function ActiveOrdersPage() {
         id: "userId",
         name: "User Details",
         render: (order) => (
-          <Button 
-            size="sm" 
-            variant="outline" 
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => handleUserDetailsClick(order.userId)}
           >
             User Details
@@ -172,9 +175,9 @@ export default function ActiveOrdersPage() {
         id: "items",
         name: "Items",
         render: (order) => (
-          <Button 
-            size="sm" 
-            variant="outline" 
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => {
               setSelectedItems(order.items);
               setViewItemsOpen(true);
