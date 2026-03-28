@@ -60,9 +60,17 @@ export default function ItemsPage() {
     { _id: string; categoryName: string }[]
   >([]);
 
-  // Add ref to track pending operations
+  // Add ref to track pending operations and pagination state
   const pendingOperations = useRef<Set<string>>(new Set());
   const isFirstLoad = useRef(true);
+  const currentPageRef = useRef(currentPage);
+  const rowsPerPageRef = useRef(rowsPerPage);
+
+  // Update refs when state changes
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+    rowsPerPageRef.current = rowsPerPage;
+  }, [currentPage, rowsPerPage]);
 
   /* ================= FETCH ITEMS WITH PAGINATION ================= */
   const fetchItems = useCallback(async () => {
@@ -74,7 +82,7 @@ export default function ItemsPage() {
       });
       setItems(response.items);
       setTotalCount(response.pagination.total);
-      
+
       // If current page becomes empty and not first page, go to previous page
       if (response.items.length === 0 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
@@ -111,23 +119,30 @@ export default function ItemsPage() {
 
     // Handle item creation
     const handleItemCreated = (newItem: Item) => {
-      
       // Check if this item was already added optimistically
       setItems(prev => {
         // Prevent duplicate by checking if item already exists
         const exists = prev.some(item => item._id === newItem._id);
         if (exists) return prev;
-        
-        // Only add to current page if on first page and there's space
-        if (currentPage === 1 && prev.length < rowsPerPage) {
-          return [newItem, ...prev];
+
+        // Check if we're on the first page
+        if (currentPageRef.current === 1) {
+          // If we have space on the current page, add it
+          if (prev.length < rowsPerPageRef.current) {
+            return [newItem, ...prev];
+          }
+          // If no space, remove the last item and add the new one at the top
+          else {
+            return [newItem, ...prev.slice(0, -1)];
+          }
         }
+        // If not on first page, don't add to current view, but update total count
         return prev;
       });
-      
-      // Only update total count if it wasn't already updated
+
+      // Update total count
       setTotalCount(prev => {
-        // Check if this item was already counted
+        // Check if this item was already counted from optimistic update
         const wasAdded = pendingOperations.current.has(newItem._id);
         if (wasAdded) {
           pendingOperations.current.delete(newItem._id);
@@ -135,8 +150,8 @@ export default function ItemsPage() {
         }
         return prev + 1;
       });
-      
-      toast.success(`New item "${newItem.itemName}" added`);
+
+      // toast.success(`New item "${newItem.itemName}" added`);
     };
 
     // Handle item update
@@ -160,12 +175,19 @@ export default function ItemsPage() {
 
     // Handle item deletion
     const handleItemDeleted = (data: { _id: string }) => {
-      const deletedItem = items.find(item => item._id === data._id);
-      setItems(prev => prev.filter(item => item._id !== data._id));
+      // Find the deleted item before removing it
+      let deletedItemName = '';
+      setItems(prev => {
+        const deleted = prev.find(item => item._id === data._id);
+        if (deleted) {
+          deletedItemName = deleted.itemName;
+        }
+        return prev.filter(item => item._id !== data._id);
+      });
       setTotalCount(prev => prev - 1);
-      
-      if (deletedItem) {
-        toast.info(`Item "${deletedItem.itemName}" deleted`);
+
+      if (deletedItemName) {
+        toast.info(`Item "${deletedItemName}" deleted`);
       }
     };
 
@@ -191,52 +213,71 @@ export default function ItemsPage() {
       channel.unbind('items-bulk-update', handleItemsBulkUpdate);
       pusher.unsubscribe('items');
     };
-  }, [currentPage, rowsPerPage, items]);
+  }, []); // Empty dependency array - only subscribe once
 
   /* ================= CREATE / UPDATE ================= */
   const handleSubmitItem = async (values: any) => {
     try {
       if (editingItem) {
         const updatedItem = await updateItem(editingItem._id, values);
-        
-        // Add to pending operations if it's a new addition
-        if (!editingItem) {
-          pendingOperations.current.add(updatedItem._id);
-        }
-        
+
         // Update state optimistically
         setItems(prev =>
           prev.map(item =>
             item._id === editingItem._id ? updatedItem : item
           )
         );
-        
-        toast.success("Item updated successfully");
+
+        // toast.success("Item updated successfully");
       } else {
         const newItem = await createItem(values);
-        
+
         // Add to pending operations to track
         pendingOperations.current.add(newItem._id);
-        
-        // Update state optimistically
+
+        // Update state with the new item
         setItems(prev => {
           // Check if item already exists (to prevent duplicates)
           const exists = prev.some(item => item._id === newItem._id);
           if (exists) return prev;
-          
-          // Only add if on first page and there's space
-          if (currentPage === 1 && prev.length < rowsPerPage) {
-            return [newItem, ...prev];
+
+          // Only add if on first page
+          if (currentPage === 1) {
+            // If we have space on the current page, add it
+            if (prev.length < rowsPerPage) {
+              return [newItem, ...prev];
+            }
+            // If no space, remove the last item and add the new one at the top
+            else {
+              return [newItem, ...prev.slice(0, -1)];
+            }
           }
           return prev;
         });
-        
+
         // Update total count
         setTotalCount(prev => prev + 1);
-        
-        toast.success("Item created successfully");
+
+        // toast.success("Item created successfully");
+
+        // If not on first page, show a notification that the item was added
+        const message =
+          currentPage !== 1
+            ? `Item "${newItem.itemName}" added and moved to page 1`
+            : `Item "${newItem.itemName}" added successfully`;
+
+        if (currentPage !== 1) {
+          toast.info(message, {
+            action: {
+              label: "Go to page 1",
+              onClick: () => setCurrentPage(1),
+            },
+          });
+        } else {
+          toast.info(message);
+        }
       }
-      
+
       setFormOpen(false);
       setEditingItem(null);
     } catch (error: any) {
@@ -252,12 +293,12 @@ export default function ItemsPage() {
     setIsDeleting(true);
     try {
       await deleteItem(selectedItem._id);
-      
+
       // Update state optimistically
       setItems(prev => prev.filter(item => item._id !== selectedItem._id));
       setTotalCount(prev => prev - 1);
-      
-      toast.success("Item deleted successfully");
+
+      // toast.success("Item deleted successfully");
       setDeleteOpen(false);
       setSelectedItem(null);
     } catch (error: any) {
@@ -342,7 +383,7 @@ export default function ItemsPage() {
     itemType: true,
     category: true,
     price: true,
-    description: true,
+    description: false,
     toppings: true,
     image: true,
     action: true,

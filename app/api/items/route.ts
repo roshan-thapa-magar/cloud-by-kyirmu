@@ -168,15 +168,15 @@ export async function GET(request: NextRequest) {
         userCount: popularityMap[item._id.toString()] || 0,
       }));
       itemsWithPopularity.sort((a, b) => b.userCount - a.userCount);
-      
+
       // Apply pagination only if skip & limit exist
       items = skip !== undefined && limit !== undefined
         ? itemsWithPopularity.slice(skip, skip + limit)
         : itemsWithPopularity;
 
       return NextResponse.json(
-        { 
-          message: "Items fetched successfully", 
+        {
+          message: "Items fetched successfully",
           items,
           pagination: {
             total,
@@ -208,15 +208,15 @@ export async function GET(request: NextRequest) {
         totalSold: topSellingMap[item._id.toString()] || 0,
       }));
       itemsWithSales.sort((a, b) => b.totalSold - a.totalSold);
-      
+
       // Apply pagination only if skip & limit exist
       items = skip !== undefined && limit !== undefined
         ? itemsWithSales.slice(skip, skip + limit)
         : itemsWithSales;
 
       return NextResponse.json(
-        { 
-          message: "Items fetched successfully", 
+        {
+          message: "Items fetched successfully",
           items,
           pagination: {
             total,
@@ -232,10 +232,10 @@ export async function GET(request: NextRequest) {
       let sortOption: any = {};
       if (sort === "price_low") sortOption = { price: 1 };
       else if (sort === "price_high") sortOption = { price: -1 };
-
+      else sortOption = { createdAt: -1 };
       // Get total count for pagination
       total = await Items.countDocuments(query);
-      
+
       let findQuery = Items.find(query).sort(sortOption);
       if (skip !== undefined && limit !== undefined) {
         findQuery = findQuery.skip(skip).limit(limit);
@@ -243,8 +243,8 @@ export async function GET(request: NextRequest) {
       items = await findQuery;
 
       return NextResponse.json(
-        { 
-          message: "Items fetched successfully", 
+        {
+          message: "Items fetched successfully",
           items,
           pagination: {
             total,
