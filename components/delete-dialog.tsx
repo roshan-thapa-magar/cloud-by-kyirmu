@@ -21,6 +21,7 @@ export interface DeleteDialogProps {
   description?: string;
   confirmText?: string;
   cancelText?: string;
+  loadingText?: string;
   isDangerous?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -34,6 +35,7 @@ export function DeleteDialog({
   title = 'Delete item?',
   description = 'This action cannot be undone.',
   confirmText = 'Delete',
+  loadingText = 'Deleting...',
   cancelText = 'Cancel',
   isDangerous = true,
   onConfirm,
@@ -69,7 +71,7 @@ export function DeleteDialog({
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
-                Deleting
+               {loadingText}
                 <Loader2 className="h-4 w-4 animate-spin" />
               </span>
             ) : (

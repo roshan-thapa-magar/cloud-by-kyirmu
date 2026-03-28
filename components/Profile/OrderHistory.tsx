@@ -305,6 +305,7 @@ export default function OrderHistoryPage() {
         title="Cancel Order?"
         description="Are you sure you want to cancel this order? This action cannot be undone."
         confirmText="Yes, Cancel"
+        loadingText="Cancelling..."
         cancelText="No, Keep"
         onConfirm={handleCancelOrder}
         onCancel={() => setDeleteDialogOpen(false)}
