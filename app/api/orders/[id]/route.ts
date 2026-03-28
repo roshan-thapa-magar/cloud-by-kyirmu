@@ -57,7 +57,7 @@ export async function DELETE(req: Request, context: { params: Promise<Params> })
     }
     
     return NextResponse.json(
-      { message: "Order deleted successfully" },
+      { message: `Order ${deletedOrder._id} has been deleted successfully` },
       { status: 200 }
     );
   } catch (error: unknown) {

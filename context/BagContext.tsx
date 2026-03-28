@@ -123,11 +123,11 @@ export function BagProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Failed to add to bag");
+        toast.error(data.message || data.error || "Failed to add to bag");
         return false;
       }
 
-      toast.success("Added to bag successfully!");
+      toast.success(data.message || "Added to bag successfully");
       setData(data.order);
       await fetchBag();
       return true;

@@ -98,7 +98,7 @@ SpicyLevel.displayName = "SpicyLevel";
 export function FoodOrderingDialog({ item, children, open, onOpenChange }: FoodOrderingDialogProps) {
   const { user } = useUser();
   const { addToBag } = useBag();
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const { openModal } = useAuthModal()
 
   const [internalOpen, setInternalOpen] = useState(false);
@@ -118,6 +118,10 @@ export function FoodOrderingDialog({ item, children, open, onOpenChange }: FoodO
       openModal();
       return;
     }
+    if (session?.user?.role !== "user") {
+      openModal();
+      return;
+    }
     setIsOpen(newOpen);
   };
 
@@ -127,6 +131,12 @@ export function FoodOrderingDialog({ item, children, open, onOpenChange }: FoodO
       e.preventDefault();
       e.stopPropagation();
       openModal();
+    }
+    if (session?.user?.role !== "user") {
+      e.preventDefault();
+      e.stopPropagation();
+      openModal();
+      return;
     }
   };
 

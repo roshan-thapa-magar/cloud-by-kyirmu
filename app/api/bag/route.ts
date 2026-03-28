@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
 
 
     return NextResponse.json(
-      { success: true, message: "Bag created successfully", data: newBag, updated: false },
+      { success: true, message: "Added to bag successfully!", data: newBag, updated: false },
       { status: 201 }
     );
   } catch (error: any) {

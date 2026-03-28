@@ -92,7 +92,7 @@ export function LoginForm({
       toast.error(res.error);
       setLoading(false);
     } else {
-      toast.success("Login successful! Redirecting...");
+      // toast.success("Login successful! Redirecting...");
       router.push("/owner");
     }
   };
