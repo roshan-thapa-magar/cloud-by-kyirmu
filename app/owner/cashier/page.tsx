@@ -155,6 +155,36 @@ export default function ActiveOrdersPage() {
     }
   };
 
+  // Fix: Add proper type checking for address
+  const handleCopyAddress = (address: string | undefined | null) => {
+    if (!address) {
+      toast.error("No address available");
+      return;
+    }
+
+    const parts = address.split(",");
+
+    if (parts.length === 2) {
+      const lat = parseFloat(parts[0]);
+      const lng = parseFloat(parts[1]);
+
+      if (isNaN(lat) || isNaN(lng)) {
+        toast.error("Invalid coordinates");
+        return;
+      }
+
+      const mapsLink = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+
+      navigator.clipboard.writeText(mapsLink);
+      toast.success("Google Maps link copied!");
+
+      // optional: open directly
+      // window.open(mapsLink, "_blank");
+    } else {
+      toast.error("Invalid address format");
+    }
+  };
+
   const columns: ColumnDefinition<Order>[] = useMemo(
     () => [
       {
@@ -189,6 +219,23 @@ export default function ActiveOrdersPage() {
           >
             <Eye className="w-4 h-4 mr-1" /> View Items
           </Button>
+        ),
+      },
+      {
+        id: "address",
+        name: "Address",
+        render: (order) => (
+          <div className="flex items-center gap-2">
+            {order.address && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleCopyAddress(order.address)}
+              >
+                Copy Map
+              </Button>
+            )}
+          </div>
         ),
       },
       {
@@ -266,13 +313,14 @@ export default function ActiveOrdersPage() {
         ),
       },
     ],
-    []
+    [handleUserDetailsClick, handleCopyAddress]
   );
 
   const initialColumnVisibility = {
     orderId: true,
     userId: true,
     items: true,
+    address: true,
     totalAmount: true,
     status: true,
     paymentStatus: true,
@@ -292,7 +340,7 @@ export default function ActiveOrdersPage() {
       setOrders((prev) =>
         prev.map((o) => (o._id === selectedOrder._id ? { ...updatedOrder, id: updatedOrder._id } : o))
       );
-      toast.success("Order updated successfully");
+      // toast.success("Order updated successfully");
       fetchOrders();
       setIsEditOpen(false);
       setSelectedOrder(null);
@@ -314,7 +362,7 @@ export default function ActiveOrdersPage() {
       await deleteOrder(selectedOrder._id);
       setOrders((prev) => prev.filter((o) => o._id !== selectedOrder._id));
       setTotalCount((prev) => prev - 1);
-      toast.success("Order deleted successfully");
+      // toast.success("Order deleted successfully");
       setIsDeleteOpen(false);
       setSelectedOrder(null);
       fetchOrders();
