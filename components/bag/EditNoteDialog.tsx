@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+import { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +14,6 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  DrawerClose,
 } from "@/components/ui/drawer";
 
 interface EditNoteDialogProps {
@@ -35,6 +33,7 @@ const EditNoteDialog = ({
 }: EditNoteDialogProps) => {
   const [noteValue, setNoteValue] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Detect mobile screens
   useEffect(() => {
@@ -44,32 +43,38 @@ const EditNoteDialog = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Update noteValue when the note prop changes or dialog opens
+  // Set note value when opening
   useEffect(() => {
     if (open) {
       setNoteValue(note || "");
+
+      // ✅ smooth focus (no conflict with Drawer)
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
     }
-  }, [note, open]);
+  }, [open, note]);
 
   const handleSave = async () => {
     await onSave(noteValue);
   };
 
   const handleClose = () => {
-    setNoteValue(""); // Reset when closing
+    setNoteValue("");
     onClose();
   };
 
   const FormContent = (
     <div className="space-y-4">
       <textarea
+        ref={textareaRef}
         value={noteValue}
         onChange={(e) => setNoteValue(e.target.value)}
         placeholder="Add special instructions..."
-        className="w-full min-h-[100px] border rounded-md p-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+        className="w-full min-h-[100px] border rounded-md p-2 text-sm resize-y 
+                   outline-none focus:outline-none focus:ring-0"
         rows={4}
-        autoFocus
-        style={{ fontSize: "16px" }}
+        style={{ fontSize: "16px" }} // ✅ prevents zoom on iOS
       />
 
       <div className="flex gap-2">
@@ -82,25 +87,35 @@ const EditNoteDialog = ({
           Cancel
         </Button>
         <Button className="flex-1" onClick={handleSave} disabled={loading}>
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Note"}
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            "Save Note"
+          )}
         </Button>
       </div>
     </div>
   );
 
   return isMobile ? (
-    <Drawer open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DrawerContent className="rounded-t-lg p-4 overflow-auto max-h-[calc(100vh-4rem)]">
+    <Drawer
+      open={open}
+      onOpenChange={(o) => !o && handleClose()}
+      modal={false} // ✅ FIX: disable focus lock
+    >
+      <DrawerContent
+        className="rounded-t-lg p-4 overflow-y-auto max-h-[calc(100vh-4rem)]"
+        onOpenAutoFocus={(e) => e.preventDefault()} // ✅ FIX: prevent focus conflict
+      >
         <DrawerHeader>
           <DrawerTitle>Edit Note</DrawerTitle>
-          <DrawerClose />
         </DrawerHeader>
         {FormContent}
       </DrawerContent>
     </Drawer>
   ) : (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-md overflow-auto max-h-[calc(100vh-4rem)]">
+      <DialogContent className="sm:max-w-md overflow-y-auto max-h-[calc(100vh-4rem)]">
         <DialogHeader>
           <DialogTitle>Edit Note</DialogTitle>
         </DialogHeader>
