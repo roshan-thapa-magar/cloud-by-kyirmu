@@ -134,7 +134,7 @@
 //                     />
 //                   </div>
 //                 </Field>
-                
+
 //                 <div className="space-y-3">
 //                   <Button 
 //                     type="submit" 
@@ -148,7 +148,7 @@
 //                     )}
 //                     Continue with Email
 //                   </Button>
-                  
+
 //                   <div className="relative">
 //                     <div className="absolute inset-0 flex items-center">
 //                       <div className="w-full border-t border-border"></div>
@@ -157,7 +157,7 @@
 //                       <span className="bg-background px-2 text-muted-foreground">or</span>
 //                     </div>
 //                   </div>
-                  
+
 //                   <Button 
 //                     variant="outline" 
 //                     type="button" 
@@ -218,7 +218,7 @@
 //                     </InputOTPGroup>
 //                   </InputOTP>
 //                 </div>
-                
+
 //                 <Button 
 //                   type="submit" 
 //                   disabled={loading || !otp}
@@ -230,7 +230,7 @@
 //                     "Verify & Continue"
 //                   )}
 //                 </Button>
-                
+
 //                 <div className="text-center space-y-2">
 //                   <p className="text-sm text-muted-foreground">
 //                     Didn't receive the code?
@@ -249,7 +249,7 @@
 //                     </Button>
 //                   )}
 //                 </div>
-                
+
 //                 <Button
 //                   variant="outline"
 //                   type="button"
@@ -280,7 +280,7 @@
 //                     />
 //                   </div>
 //                 </Field>
-                
+
 //                 <Field>
 //                   <FieldLabel className="text-sm font-medium">Phone Number</FieldLabel>
 //                   <div className="relative">
@@ -294,7 +294,7 @@
 //                     />
 //                   </div>
 //                 </Field>
-                
+
 //                 <div className="flex gap-3 pt-2">
 //                   <Button
 //                     type="button"
@@ -343,6 +343,7 @@ import { toast } from "sonner"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useEffect, useRef, useState } from "react"
+import { IoLogoGoogle } from "react-icons/io5";
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
   const [step, setStep] = useState<0 | 1 | 2>(0)
@@ -451,15 +452,19 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                 Login with OTP
               </Button>
               <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">or</span>
-                  </div>
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
                 </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
               <Button variant="outline" type="button" onClick={handleGoogleLogin} disabled={loadingGoogle} className="w-full h-11">
-                Google Login
+                {loadingGoogle ? (
+                  <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                ) : (<IoLogoGoogle />
+                )}
+                Continue with Google
               </Button>
             </FieldGroup>
           </form>
